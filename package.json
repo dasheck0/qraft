@@ -1,0 +1,49 @@
+{
+  "name": "dasheck0-unbox",
+  "version": "1.0.0",
+  "description": "A CLI tool to unbox pre-configured template files into projects",
+  "main": "dist/cli.js",
+  "bin": {
+    "unbox": "bin/unbox.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "cli",
+    "template",
+    "scaffold",
+    "unbox",
+    "project-generator"
+  ],
+  "author": "Stefan Neidig <s.neidig@nanogiants.de> (https://nanogiants.de/)",
+  "license": "MIT",
+  "files": [
+    "dist/",
+    "bin/",
+    "boxes/"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^9.0.8",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.10",
+    "jest": "^30.0.4",
+    "lefthook": "^1.11.16",
+    "ts-jest": "^29.4.0",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0",
+    "fs-extra": "^11.3.0",
+    "inquirer": "^12.7.0"
+  }
+}
