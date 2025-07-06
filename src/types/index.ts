@@ -30,6 +30,9 @@ export interface BoxManifest {
   
   /** Files to exclude when copying (relative to box directory) */
   exclude?: string[];
+
+  /** Optional post-installation steps to show to the user */
+  postInstall?: string[];
 }
 
 /**

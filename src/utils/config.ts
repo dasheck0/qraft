@@ -271,6 +271,27 @@ export class ConfigManager {
   }
 
   /**
+   * Add a new registry
+   * @param name Registry name
+   * @param registry Registry configuration
+   * @returns Promise<void>
+   */
+  async addRegistry(name: string, registry: RegistryConfig): Promise<void> {
+    const config = await this.getConfig();
+    config.registries[name] = registry;
+    await this.saveConfig();
+  }
+
+  /**
+   * Update cache configuration (alias for setCacheSettings)
+   * @param updates Partial cache configuration updates
+   * @returns Promise<void>
+   */
+  async updateCacheConfig(updates: { enabled?: boolean; ttl?: number; directory?: string }): Promise<void> {
+    await this.setCacheSettings(updates);
+  }
+
+  /**
    * Reset configuration to defaults
    * @returns Promise<void>
    */
