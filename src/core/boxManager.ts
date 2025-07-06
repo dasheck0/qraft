@@ -1,40 +1,89 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import { BoxInfo, BoxManifest, BoxOperationConfig, BoxOperationResult } from '../types';
-import { FileOperations } from './fileOperations';
+import {
+  BoxInfo,
+  BoxOperationConfig,
+  BoxOperationResult,
+  BoxReference
+} from '../types';
+import { ConfigManager } from '../utils/config';
+import { CacheManager } from './cacheManager';
+import { RegistryManager } from './registryManager';
 
 /**
- * BoxManager handles discovery, listing, and basic operations on template boxes
+ * BoxManager that supports both local and remote GitHub repositories
  */
 export class BoxManager {
-  private boxesDirectory: string;
+  private configManager: ConfigManager;
+  private registryManager: RegistryManager | null = null;
+  private cacheManager: CacheManager | null = null;
 
-  constructor(boxesDirectory: string = 'boxes') {
-    this.boxesDirectory = path.resolve(boxesDirectory);
+  constructor(configManager?: ConfigManager) {
+    this.configManager = configManager || new ConfigManager();
   }
 
   /**
-   * Discover all available boxes in the boxes directory
-   * @returns Promise<BoxInfo[]> Array of discovered boxes with their metadata
+   * Initialize the managers (lazy loading)
    */
-  async discoverBoxes(): Promise<BoxInfo[]> {
-    try {
-      // Check if boxes directory exists
-      if (!(await fs.pathExists(this.boxesDirectory))) {
-        return [];
-      }
+  private async initializeManagers(): Promise<void> {
+    if (!this.registryManager || !this.cacheManager) {
+      const config = await this.configManager.getConfig();
+      this.registryManager = new RegistryManager(config);
+      this.cacheManager = new CacheManager(config.cache);
+    }
+  }
 
-      const entries = await fs.readdir(this.boxesDirectory, { withFileTypes: true });
+  /**
+   * Parse a box reference string and resolve registry
+   * @param reference Box reference (e.g., "n8n", "myorg/n8n")
+   * @param overrideRegistry Optional registry to override the parsed registry
+   * @returns Promise<BoxReference> Parsed and resolved reference
+   */
+  async parseBoxReference(reference: string, overrideRegistry?: string): Promise<BoxReference> {
+    await this.initializeManagers();
+    return this.registryManager!.parseBoxReference(reference, overrideRegistry);
+  }
+
+  /**
+   * Resolve registry name to configuration
+   * @param registryName Registry name
+   * @returns Promise<RegistryConfig> Registry configuration
+   */
+  async resolveRegistry(registryName: string) {
+    await this.initializeManagers();
+    return this.registryManager!.resolveRegistry(registryName);
+  }
+
+  /**
+   * Get the effective registry for a box reference
+   * @param reference Box reference
+   * @param overrideRegistry Optional registry override
+   * @returns Promise<string> Effective registry name
+   */
+  async getEffectiveRegistry(reference: string, overrideRegistry?: string): Promise<string> {
+    await this.initializeManagers();
+    return this.registryManager!.getEffectiveRegistry(reference, overrideRegistry);
+  }
+
+  /**
+   * Discover all available boxes from the default registry
+   * @param registryName Optional registry name (uses default if not provided)
+   * @returns Promise<BoxInfo[]> Array of discovered boxes
+   */
+  async discoverBoxes(registryName?: string): Promise<BoxInfo[]> {
+    await this.initializeManagers();
+    
+    try {
+      const boxNames = await this.registryManager!.listBoxes(registryName);
       const boxes: BoxInfo[] = [];
 
-      for (const entry of entries) {
-        if (entry.isDirectory()) {
-          const boxPath = path.join(this.boxesDirectory, entry.name);
-          const boxInfo = await this.loadBoxInfo(boxPath);
-          
-          if (boxInfo) {
-            boxes.push(boxInfo);
-          }
+      for (const boxName of boxNames) {
+        const boxRef = await this.parseBoxReference(
+          registryName ? `${registryName}/${boxName}` : boxName
+        );
+        const boxInfo = await this.getBoxInfo(boxRef);
+        if (boxInfo) {
+          boxes.push(boxInfo);
         }
       }
 
@@ -45,14 +94,43 @@ export class BoxManager {
   }
 
   /**
-   * Get information about a specific box by name
-   * @param boxName Name of the box to retrieve
+   * Get information about a specific box
+   * @param boxRef Box reference or string
    * @returns Promise<BoxInfo | null> Box information or null if not found
    */
-  async getBoxInfo(boxName: string): Promise<BoxInfo | null> {
+  async getBoxInfo(boxRef: BoxReference | string): Promise<BoxInfo | null> {
+    await this.initializeManagers();
+    
+    const parsedRef = typeof boxRef === 'string' 
+      ? await this.parseBoxReference(boxRef)
+      : boxRef;
+
     try {
-      const boxPath = path.join(this.boxesDirectory, boxName);
-      return await this.loadBoxInfo(boxPath);
+      // Check cache first
+      const cachedEntry = await this.cacheManager!.getCacheEntry(parsedRef);
+      if (cachedEntry) {
+        return {
+          manifest: cachedEntry.manifest,
+          path: cachedEntry.localPath,
+          files: cachedEntry.files
+        };
+      }
+
+      // Fetch from registry
+      const boxInfo = await this.registryManager!.getBoxInfo(parsedRef);
+      if (boxInfo) {
+        // Cache the box info for future use
+        const fileContents = new Map<string, Buffer>();
+        // Note: We're not downloading files here, just caching metadata
+        await this.cacheManager!.setCacheEntry(
+          parsedRef,
+          boxInfo.manifest,
+          boxInfo.files,
+          fileContents
+        );
+      }
+
+      return boxInfo;
     } catch (error) {
       return null;
     }
@@ -60,25 +138,26 @@ export class BoxManager {
 
   /**
    * Check if a box exists
-   * @param boxName Name of the box to check
+   * @param boxRef Box reference or string
    * @returns Promise<boolean> True if box exists
    */
-  async boxExists(boxName: string): Promise<boolean> {
-    try {
-      const boxPath = path.join(this.boxesDirectory, boxName);
-      const manifestPath = path.join(boxPath, 'manifest.json');
-      return await fs.pathExists(manifestPath);
-    } catch (error) {
-      return false;
-    }
+  async boxExists(boxRef: BoxReference | string): Promise<boolean> {
+    await this.initializeManagers();
+    
+    const parsedRef = typeof boxRef === 'string' 
+      ? await this.parseBoxReference(boxRef)
+      : boxRef;
+
+    return await this.registryManager!.boxExists(parsedRef);
   }
 
   /**
    * List all available boxes with their basic information
-   * @returns Promise<Array<{name: string, description: string}>> Simple list of boxes
+   * @param registryName Optional registry name
+   * @returns Promise<Array<{name: string, description: string, version: string}>> Simple list of boxes
    */
-  async listBoxes(): Promise<Array<{ name: string; description: string; version: string }>> {
-    const boxes = await this.discoverBoxes();
+  async listBoxes(registryName?: string): Promise<Array<{ name: string; description: string; version: string }>> {
+    const boxes = await this.discoverBoxes(registryName);
     return boxes.map(box => ({
       name: box.manifest.name,
       description: box.manifest.description,
@@ -87,124 +166,35 @@ export class BoxManager {
   }
 
   /**
-   * Find boxes by directory name (for --dir flag support)
-   * @param dirName Directory name to search for
-   * @returns Promise<BoxInfo[]> Boxes that match the directory name
-   */
-  async findBoxesByDirectory(dirName: string): Promise<BoxInfo[]> {
-    const boxes = await this.discoverBoxes();
-    return boxes.filter(box => 
-      box.manifest.name === dirName || 
-      box.manifest.defaultTarget === dirName ||
-      box.path.endsWith(dirName)
-    );
-  }
-
-  /**
-   * Load box information from a directory path
-   * @param boxPath Absolute path to the box directory
-   * @returns Promise<BoxInfo | null> Box information or null if invalid
-   */
-  private async loadBoxInfo(boxPath: string): Promise<BoxInfo | null> {
-    try {
-      const manifestPath = path.join(boxPath, 'manifest.json');
-      
-      // Check if manifest exists
-      if (!(await fs.pathExists(manifestPath))) {
-        return null;
-      }
-
-      // Read and parse manifest
-      const manifestContent = await fs.readFile(manifestPath, 'utf-8');
-      const manifest: BoxManifest = JSON.parse(manifestContent);
-
-      // Validate required fields
-      if (!manifest.name || !manifest.description || !manifest.author || !manifest.version) {
-        throw new Error(`Invalid manifest in ${boxPath}: missing required fields`);
-      }
-
-      // Get list of files in the box (excluding manifest.json)
-      const files = await this.getBoxFiles(boxPath);
-
-      return {
-        manifest,
-        path: boxPath,
-        files
-      };
-    } catch (error) {
-      // Log error but don't throw - just return null for invalid boxes
-      console.warn(`Warning: Could not load box from ${boxPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      return null;
-    }
-  }
-
-  /**
-   * Get list of files in a box directory (excluding manifest.json)
-   * @param boxPath Path to the box directory
-   * @returns Promise<string[]> Array of relative file paths
-   */
-  private async getBoxFiles(boxPath: string): Promise<string[]> {
-    const files: string[] = [];
-    
-    const scanDirectory = async (dirPath: string, relativePath: string = ''): Promise<void> => {
-      const entries = await fs.readdir(dirPath, { withFileTypes: true });
-      
-      for (const entry of entries) {
-        const fullPath = path.join(dirPath, entry.name);
-        const relativeFilePath = path.join(relativePath, entry.name);
-        
-        // Skip manifest.json
-        if (entry.name === 'manifest.json' && relativePath === '') {
-          continue;
-        }
-        
-        if (entry.isDirectory()) {
-          await scanDirectory(fullPath, relativeFilePath);
-        } else {
-          files.push(relativeFilePath);
-        }
-      }
-    };
-    
-    await scanDirectory(boxPath);
-    return files.sort();
-  }
-
-  /**
-   * Copy a box to a target directory
+   * Copy a box to a target directory with GitHub support
    * @param config Box operation configuration
+   * @param overrideRegistry Optional registry to override the parsed registry
    * @returns Promise<BoxOperationResult> Result of the operation
    */
-  async copyBox(config: BoxOperationConfig): Promise<BoxOperationResult> {
+  async copyBox(config: BoxOperationConfig, overrideRegistry?: string): Promise<BoxOperationResult> {
+    await this.initializeManagers();
+
     try {
+      // Parse box reference with optional registry override
+      const boxRef = await this.parseBoxReference(config.boxName, overrideRegistry);
+
       // Get box information
-      const boxInfo = await this.getBoxInfo(config.boxName);
+      const boxInfo = await this.getBoxInfo(boxRef);
       if (!boxInfo) {
+        const effectiveRegistry = await this.getEffectiveRegistry(config.boxName, overrideRegistry);
         return {
           success: false,
-          message: `Box '${config.boxName}' not found`,
-          error: new Error(`Box '${config.boxName}' does not exist`)
+          message: `Box '${config.boxName}' not found in registry '${effectiveRegistry}'`,
+          error: new Error(`Box '${config.boxName}' does not exist in registry '${effectiveRegistry}'`)
         };
       }
 
       // Determine target directory
-      const targetDir = config.targetDirectory || boxInfo.manifest.defaultTarget || process.cwd();
+      const targetDir = config.targetDirectory ?? boxInfo.manifest.defaultTarget ?? process.cwd();
       const resolvedTargetDir = path.resolve(targetDir);
 
-      // Create file operations instance
-      const fileOps = new FileOperations();
-
-      // Get exclude patterns from manifest
-      const excludePatterns = boxInfo.manifest.exclude || [];
-
-      // Copy files
-      const results = await fileOps.copyFiles(
-        boxInfo.path,
-        resolvedTargetDir,
-        boxInfo.files,
-        config.force,
-        excludePatterns
-      );
+      // Download and copy files
+      const results = await this.downloadAndCopyFiles(boxRef, boxInfo, resolvedTargetDir, config.force);
 
       // Analyze results
       const copiedFiles = results.filter(r => r.success).map(r => r.destination);
@@ -242,33 +232,211 @@ export class BoxManager {
   }
 
   /**
+   * Download files from GitHub and copy them to target directory
+   * @param boxRef Box reference
+   * @param boxInfo Box information
+   * @param targetDir Target directory
+   * @param force Whether to force overwrite
+   * @returns Promise<Array> File operation results
+   */
+  private async downloadAndCopyFiles(
+    boxRef: BoxReference,
+    boxInfo: BoxInfo,
+    targetDir: string,
+    force: boolean
+  ): Promise<Array<{ success: boolean; skipped: boolean; destination: string; error?: Error }>> {
+    const results: Array<{ success: boolean; skipped: boolean; destination: string; error?: Error }> = [];
+    const excludePatterns = boxInfo.manifest.exclude || [];
+
+    for (const filePath of boxInfo.files) {
+      // Check if file should be excluded
+      if (this.shouldExcludeFile(filePath, excludePatterns)) {
+        results.push({
+          success: false,
+          skipped: true,
+          destination: path.join(targetDir, filePath)
+        });
+        continue;
+      }
+
+      try {
+        const destinationPath = path.join(targetDir, filePath);
+
+        // Check if destination exists and handle overwrite protection
+        const destinationExists = await fs.pathExists(destinationPath);
+        if (destinationExists && !force) {
+          results.push({
+            success: false,
+            skipped: true,
+            destination: destinationPath
+          });
+          continue;
+        }
+
+        // Try to get file from cache first
+        let fileContent = await this.cacheManager!.getCachedFile(boxRef, filePath);
+        
+        if (!fileContent) {
+          // Download from GitHub
+          fileContent = await this.registryManager!.downloadFile(boxRef, filePath);
+          
+          // Cache the file
+          const fileContents = new Map<string, Buffer>();
+          fileContents.set(filePath, fileContent);
+          await this.cacheManager!.setCacheEntry(boxRef, boxInfo.manifest, [filePath], fileContents);
+        }
+
+        // Ensure destination directory exists
+        await fs.ensureDir(path.dirname(destinationPath));
+
+        // Write file
+        await fs.writeFile(destinationPath, fileContent);
+
+        results.push({
+          success: true,
+          skipped: false,
+          destination: destinationPath
+        });
+
+      } catch (error) {
+        results.push({
+          success: false,
+          skipped: false,
+          destination: path.join(targetDir, filePath),
+          error: error instanceof Error ? error : new Error('Unknown error')
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Check if a file should be excluded based on patterns
+   * @param filePath Relative file path
+   * @param excludePatterns Array of patterns to match against
+   * @returns boolean True if file should be excluded
+   */
+  private shouldExcludeFile(filePath: string, excludePatterns: string[]): boolean {
+    if (excludePatterns.length === 0) {
+      return false;
+    }
+
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    
+    return excludePatterns.some(pattern => {
+      const regexPattern = pattern
+        .replace(/\./g, '\\.')
+        .replace(/\*/g, '.*')
+        .replace(/\?/g, '.');
+      
+      const regex = new RegExp(`^${regexPattern}$`, 'i');
+      return regex.test(normalizedPath) || normalizedPath.includes(pattern);
+    });
+  }
+
+  /**
    * Copy a box by name with simplified parameters
    * @param boxName Name of the box to copy
    * @param targetDirectory Target directory (optional)
    * @param force Whether to force overwrite existing files
+   * @param overrideRegistry Optional registry to override the parsed registry
    * @returns Promise<BoxOperationResult> Result of the operation
    */
   async copyBoxByName(
     boxName: string,
     targetDirectory?: string,
-    force: boolean = false
+    force: boolean = false,
+    overrideRegistry?: string
   ): Promise<BoxOperationResult> {
     const config: BoxOperationConfig = {
       boxName,
-      targetDirectory: targetDirectory || process.cwd(),
+      targetDirectory: targetDirectory ?? process.cwd(),
       force,
       interactive: false,
-      boxesDirectory: this.boxesDirectory
+      boxesDirectory: '' // Not used in GitHub mode
     };
 
-    return this.copyBox(config);
+    return this.copyBox(config, overrideRegistry);
   }
 
   /**
-   * Get the absolute path to the boxes directory
-   * @returns string Absolute path to boxes directory
+   * List all configured registries
+   * @returns Promise<Array<{name: string, repository: string, isDefault: boolean}>> List of registries
    */
-  getBoxesDirectory(): string {
-    return this.boxesDirectory;
+  async listRegistries(): Promise<Array<{ name: string; repository: string; isDefault: boolean }>> {
+    await this.initializeManagers();
+    const registries = this.registryManager!.getRegistries();
+
+    return Object.values(registries).map(registry => ({
+      name: registry.name,
+      repository: registry.repository,
+      isDefault: registry.isDefault || false
+    }));
+  }
+
+  /**
+   * Get the default registry name
+   * @returns Promise<string> Default registry name
+   */
+  async getDefaultRegistry(): Promise<string> {
+    await this.initializeManagers();
+    return this.registryManager!.getDefaultRegistry();
+  }
+
+  /**
+   * Check if a registry has authentication configured
+   * @param registryName Name of the registry
+   * @returns Promise<boolean> True if authentication is available
+   */
+  async hasAuthentication(registryName: string): Promise<boolean> {
+    await this.initializeManagers();
+    return this.registryManager!.hasAuthentication(registryName);
+  }
+
+  /**
+   * Test authentication for a registry
+   * @param registryName Name of the registry
+   * @returns Promise<{authenticated: boolean, user?: string, error?: string}> Authentication test result
+   */
+  async testAuthentication(registryName: string): Promise<{
+    authenticated: boolean;
+    user?: string;
+    error?: string;
+  }> {
+    await this.initializeManagers();
+    return this.registryManager!.testAuthentication(registryName);
+  }
+
+  /**
+   * Set authentication token for a registry
+   * @param registryName Name of the registry
+   * @param token GitHub token
+   * @returns Promise<void>
+   */
+  async setRegistryToken(registryName: string, token: string): Promise<void> {
+    await this.configManager.setRegistryToken(registryName, token);
+    // Clear cached Octokit instance to use new token
+    await this.initializeManagers();
+  }
+
+  /**
+   * Set global authentication token
+   * @param token GitHub token
+   * @returns Promise<void>
+   */
+  async setGlobalToken(token: string): Promise<void> {
+    await this.configManager.setGlobalToken(token);
+    // Clear cached managers to use new token
+    this.registryManager = null;
+    this.cacheManager = null;
+  }
+
+  /**
+   * Get configuration manager
+   * @returns ConfigManager Configuration manager instance
+   */
+  getConfigManager(): ConfigManager {
+    return this.configManager;
   }
 }
