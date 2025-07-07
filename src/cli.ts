@@ -37,6 +37,7 @@ program
   .description('List available template boxes')
   .option('-r, --registry <registry>', 'list boxes from specific registry')
   .option('--all-registries', 'list boxes from all configured registries')
+  .option('-i, --interactive', 'use interactive mode for browsing and selection')
   .action(async (options) => {
     try {
       await listCommand(boxManager, options);
@@ -65,7 +66,7 @@ program
   });
 
 // Config command - manage configuration
-program.addCommand(configCommand(configManager));
+program.addCommand(configCommand(configManager, boxManager));
 
 // Auth command - manage authentication
 program.addCommand(authCommand(boxManager));

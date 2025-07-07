@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import * as path from 'path';
 import { BoxManager } from '../core/boxManager';
+import { InteractiveMode } from '../interactive/interactiveMode';
 import { BoxOperationConfig } from '../types';
 
 interface CopyOptions {
@@ -12,23 +13,40 @@ interface CopyOptions {
 }
 
 export async function copyCommand(
-  boxManager: BoxManager, 
-  boxName: string, 
+  boxManager: BoxManager,
+  boxName: string,
   options: CopyOptions
 ): Promise<void> {
   try {
+    // Use interactive mode if requested
+    if (options.interactive) {
+      const interactiveMode = new InteractiveMode(boxManager);
+      const copyOptions: { registry?: string; target?: string; force?: boolean } = {};
+      if (options.registry !== undefined) copyOptions.registry = options.registry;
+      if (options.target !== undefined) copyOptions.target = options.target;
+      if (options.force !== undefined) copyOptions.force = options.force;
+
+      const result = await interactiveMode.copyBox(boxName, copyOptions);
+
+      if (!result.success) {
+        process.exit(1);
+      }
+      return;
+    }
+
+    // Non-interactive mode (existing logic)
     // Parse box reference to validate it exists
     const boxRef = await boxManager.parseBoxReference(boxName, options.registry);
-    
+
     // Check if box exists
     const boxExists = await boxManager.boxExists(boxRef);
     if (!boxExists) {
       console.error(chalk.red('❌ Box not found:'), boxName);
-      
+
       if (options.registry) {
         console.error(chalk.gray(`   Registry: ${options.registry}`));
       }
-      
+
       console.error(chalk.gray('\nAvailable boxes:'));
       console.error(chalk.cyan('  unbox list'));
       process.exit(1);

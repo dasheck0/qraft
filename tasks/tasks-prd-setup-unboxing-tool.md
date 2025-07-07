@@ -86,12 +86,12 @@ Based on the PRD: `prd-setup-unboxing-tool.md`
   - [x] 3.7 Create list command for available boxes (npx unbox list)
   - [x] 3.8 Add registry configuration commands (config set/get)
   - [x] 3.9 Add help and version commands
-- [ ] 4.0 Interactive Mode Development
-  - [ ] 4.1 Set up inquirer.js for interactive prompts
-  - [ ] 4.2 Create box selection interface with descriptions
-  - [ ] 4.3 Implement box preview functionality
-  - [ ] 4.4 Add confirmation prompts for file operations
-  - [ ] 4.5 Integrate interactive mode with core box management
+- [x] 4.0 Interactive Mode Development
+  - [x] 4.1 Set up inquirer.js for interactive prompts
+  - [x] 4.2 Create box selection interface with descriptions
+  - [x] 4.3 Implement box preview functionality
+  - [x] 4.4 Add confirmation prompts for file operations
+  - [x] 4.5 Integrate interactive mode with core box management
 - [ ] 5.0 GitHub Template Repository Setup and Testing
   - [ ] 5.1 Create GitHub repository for default templates (dasheck0/unbox-templates)
   - [ ] 5.2 Set up repository structure with boxes as subdirectories

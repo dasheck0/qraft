@@ -1,12 +1,22 @@
 import chalk from 'chalk';
 import { BoxManager } from '../core/boxManager';
+import { InteractiveMode } from '../interactive/interactiveMode';
 
 interface ListOptions {
   registry?: string;
   allRegistries?: boolean;
+  interactive?: boolean;
 }
 
 export async function listCommand(boxManager: BoxManager, options: ListOptions): Promise<void> {
+  // Use interactive mode if requested
+  if (options.interactive) {
+    const interactiveMode = new InteractiveMode(boxManager);
+    await interactiveMode.listBoxes(options.registry);
+    return;
+  }
+
+  // Non-interactive mode (existing logic)
   console.log(chalk.blue.bold('📦 Available Template Boxes\n'));
 
   try {

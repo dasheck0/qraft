@@ -1,9 +1,11 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import inquirer from 'inquirer';
+import { BoxManager } from '../core/boxManager';
+import { InteractiveMode } from '../interactive/interactiveMode';
 import { ConfigManager } from '../utils/config';
 
-export function configCommand(configManager: ConfigManager): Command {
+export function configCommand(configManager: ConfigManager, boxManager?: BoxManager): Command {
   const config = new Command('config');
 
   // Show current configuration
@@ -61,32 +63,46 @@ export function configCommand(configManager: ConfigManager): Command {
 
   // Add registry
   config
-    .command('add-registry <name> <repository>')
+    .command('add-registry [name] [repository]')
     .description('Add a new registry')
     .option('--base-url <url>', 'GitHub API base URL (default: https://api.github.com)')
     .option('--token <token>', 'GitHub token for this registry')
     .option('--default', 'set as default registry')
+    .option('-i, --interactive', 'use interactive mode')
     .action(async (name, repository, options) => {
       try {
+        // Use interactive mode if requested or if name/repository not provided
+        if (options.interactive || !name || !repository) {
+          if (boxManager) {
+            const interactiveMode = new InteractiveMode(boxManager);
+            await interactiveMode.configureRegistry();
+            return;
+          } else {
+            console.error(chalk.red('Interactive mode not available - BoxManager not provided'));
+            process.exit(1);
+          }
+        }
+
+        // Non-interactive mode
         await configManager.addRegistry(name, {
           name,
           repository,
           baseUrl: options.baseUrl,
           token: options.token
         });
-        
+
         if (options.default) {
           await configManager.setDefaultRegistry(name);
         }
-        
+
         console.log(chalk.green('✅ Registry added successfully'));
         console.log(chalk.gray(`   Name: ${name}`));
         console.log(chalk.gray(`   Repository: ${repository}`));
-        
+
         if (options.default) {
           console.log(chalk.gray('   Set as default registry'));
         }
-        
+
       } catch (error) {
         console.error(chalk.red('Error adding registry:'), error instanceof Error ? error.message : 'Unknown error');
         process.exit(1);

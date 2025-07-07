@@ -1,7 +1,8 @@
-import { Command } from 'commander';
 import chalk from 'chalk';
+import { Command } from 'commander';
 import inquirer from 'inquirer';
 import { BoxManager } from '../core/boxManager';
+import { InteractiveMode } from '../interactive/interactiveMode';
 
 export function authCommand(boxManager: BoxManager): Command {
   const auth = new Command('auth');
@@ -11,49 +12,28 @@ export function authCommand(boxManager: BoxManager): Command {
     .command('login')
     .description('Set up GitHub authentication')
     .option('-t, --token <token>', 'GitHub personal access token')
+    .option('-i, --interactive', 'use interactive mode')
     .action(async (options) => {
       try {
-        let token = options.token;
-        
-        if (!token) {
-          console.log(chalk.blue.bold('🔐 GitHub Authentication Setup\n'));
-          console.log(chalk.gray('To access private repositories and increase rate limits,'));
-          console.log(chalk.gray('you need a GitHub Personal Access Token.\n'));
-          console.log(chalk.gray('Create one at: https://github.com/settings/tokens\n'));
-          console.log(chalk.gray('Required permissions:'));
-          console.log(chalk.gray('  • repo (for private repositories)'));
-          console.log(chalk.gray('  • public_repo (for public repositories)\n'));
-          
-          const { inputToken } = await inquirer.prompt([
-            {
-              type: 'password',
-              name: 'inputToken',
-              message: 'Enter your GitHub token:',
-              mask: '*',
-              validate: (input: string) => {
-                if (!input.trim()) {
-                  return 'Token cannot be empty';
-                }
-                if (input.length < 10) {
-                  return 'Token seems too short';
-                }
-                return true;
-              }
-            }
-          ]);
-          
-          token = inputToken;
+        // Use interactive mode if requested or no token provided
+        if (options.interactive || !options.token) {
+          const interactiveMode = new InteractiveMode(boxManager);
+          await interactiveMode.setupAuthentication();
+          return;
         }
-        
+
+        // Non-interactive mode with provided token
+        const token = options.token;
+
         // Test the token
         console.log(chalk.blue('\n⏳ Testing authentication...'));
-        
+
         await boxManager.setGlobalToken(token);
-        
+
         // Test with default registry
         const defaultRegistry = await boxManager.getDefaultRegistry();
         const authResult = await boxManager.testAuthentication(defaultRegistry);
-        
+
         if (authResult.authenticated) {
           console.log(chalk.green.bold('\n✅ Authentication successful!'));
           console.log(chalk.gray(`   Authenticated as: ${authResult.user}`));
@@ -64,7 +44,7 @@ export function authCommand(boxManager: BoxManager): Command {
           console.error(chalk.gray('\nPlease check your token and try again.'));
           process.exit(1);
         }
-        
+
       } catch (error) {
         console.error(chalk.red('Error setting up authentication:'), error instanceof Error ? error.message : 'Unknown error');
         process.exit(1);
