@@ -106,15 +106,16 @@ export class BoxManager {
       : boxRef;
 
     try {
-      // Check cache first
-      const cachedEntry = await this.cacheManager!.getCacheEntry(parsedRef);
-      if (cachedEntry) {
-        return {
-          manifest: cachedEntry.manifest,
-          path: cachedEntry.localPath,
-          files: cachedEntry.files
-        };
-      }
+      // Check cache first - TEMPORARILY DISABLED FOR DEBUGGING
+      // const cachedEntry = await this.cacheManager!.getCacheEntry(parsedRef);
+      // if (cachedEntry) {
+      //   console.log(`DEBUG: BoxManager using cached entry with ${cachedEntry.files.length} files:`, cachedEntry.files);
+      //   return {
+      //     manifest: cachedEntry.manifest,
+      //     path: cachedEntry.localPath,
+      //     files: cachedEntry.files
+      //   };
+      // }
 
       // Fetch from registry
       const boxInfo = await this.registryManager!.getBoxInfo(parsedRef);

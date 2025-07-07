@@ -64,8 +64,8 @@ export async function copyCommand(
     console.log(chalk.gray(`   Version: ${boxInfo.manifest.version}`));
     console.log(chalk.gray(`   Files: ${boxInfo.files.length}`));
     
-    // Determine target directory
-    let targetDirectory = options.target || process.cwd();
+    // Determine target directory - respect defaultTarget from manifest if no explicit target provided
+    let targetDirectory = options.target || boxInfo.manifest.defaultTarget || process.cwd();
     
     // Interactive mode
     if (options.interactive) {

@@ -361,31 +361,52 @@ export class RegistryManager {
       const [owner, repo] = registryConfig.repository.split('/');
 
       const files: string[] = [];
-      
+
       const scanDirectory = async (dirPath: string, relativePath: string = ''): Promise<void> => {
-        const { data } = await octokit.rest.repos.getContent({
-          owner,
-          repo,
-          path: dirPath
-        });
+        try {
+          const { data } = await octokit.rest.repos.getContent({
+            owner,
+            repo,
+            path: dirPath
+          });
 
-        if (!Array.isArray(data)) {
-          return;
-        }
-
-        for (const item of data) {
-          const itemRelativePath = relativePath ? `${relativePath}/${item.name}` : item.name;
-          
-          // Skip manifest.json in root
-          if (item.name === 'manifest.json' && relativePath === '') {
-            continue;
+          if (!Array.isArray(data)) {
+            // If data is not an array, it might be a single file
+            if (data.type === 'file') {
+              const itemRelativePath = relativePath ? `${relativePath}/${data.name}` : data.name;
+              // Skip manifest.json in root
+              if (!(data.name === 'manifest.json' && relativePath === '')) {
+                files.push(itemRelativePath);
+              }
+            }
+            return;
           }
 
-          if (item.type === 'dir') {
-            await scanDirectory(`${dirPath}/${item.name}`, itemRelativePath);
-          } else {
-            files.push(itemRelativePath);
+          for (const item of data) {
+            const itemRelativePath = relativePath ? `${relativePath}/${item.name}` : item.name;
+
+            // Skip manifest.json in root
+            if (item.name === 'manifest.json' && relativePath === '') {
+              continue;
+            }
+
+            if (item.type === 'dir') {
+              await scanDirectory(`${dirPath}/${item.name}`, itemRelativePath);
+            } else {
+              files.push(itemRelativePath);
+            }
           }
+        } catch (scanError) {
+          // Log the error but don't fail the entire operation
+          console.warn(`Warning: Failed to scan directory '${dirPath}': ${scanError instanceof Error ? scanError.message : 'Unknown error'}`);
+
+          // If it's a 404, the directory might not exist, which is okay
+          if (scanError instanceof Error && scanError.message.includes('404')) {
+            return;
+          }
+
+          // For other errors, we should still throw to avoid silent failures
+          throw scanError;
         }
       };
 
