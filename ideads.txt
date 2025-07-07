@@ -1,0 +1,10 @@
+# cli 
+- generate a box repo (with boilerplate)
+- create box from directory
+- templating
+
+# general
+- create logo
+
+# technical excellence
+- sonarcloud mcp and fix all bugs
