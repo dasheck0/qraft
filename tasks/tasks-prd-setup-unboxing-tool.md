@@ -92,22 +92,22 @@ Based on the PRD: `prd-setup-unboxing-tool.md`
   - [x] 4.3 Implement box preview functionality
   - [x] 4.4 Add confirmation prompts for file operations
   - [x] 4.5 Integrate interactive mode with core box management
-- [ ] 5.0 GitHub Template Repository Setup and Testing
-  - [ ] 5.1 Create GitHub repository for default templates (dasheck0/unbox-templates)
-  - [ ] 5.2 Set up repository structure with boxes as subdirectories
-  - [ ] 5.3 Create .tasks box with manifest.json and sample files
-  - [ ] 5.4 Create n8n box with manifest.json and relevant templates
-  - [ ] 5.5 Create readme box with manifest.json and documentation templates
-  - [ ] 5.6 Write comprehensive unit tests for all core modules
-  - [ ] 5.7 Write integration tests for CLI commands and GitHub integration
-  - [ ] 5.8 Test interactive mode functionality
-  - [ ] 5.9 Test registry configuration and authentication
-- [ ] 6.0 Documentation and NPM Package Deployment Preparation
-  - [ ] 6.1 Write comprehensive README.md with installation and usage instructions
-  - [ ] 6.2 Create .npmignore file to exclude development files from package
-  - [ ] 6.3 Set up GitHub Actions workflow for automated testing and publishing
-  - [ ] 6.4 Create CHANGELOG.md for version tracking
-  - [ ] 6.5 Configure package.json for proper npm publishing (files, keywords, etc.)
-  - [ ] 6.6 Add TypeScript declaration files generation to build process
-  - [ ] 6.7 Test package installation and usage via npx locally
-  - [ ] 6.8 Prepare for initial npm package publication
+- [x] 5.0 GitHub Template Repository Setup and Testing
+  - [x] 5.1 Create GitHub repository for default templates (dasheck0/unbox-templates)
+  - [x] 5.2 Set up repository structure with boxes as subdirectories
+  - [x] 5.3 Create .tasks box with manifest.json and sample files
+  - [x] 5.4 Create n8n box with manifest.json and relevant templates
+  - [x] 5.5 Create readme box with manifest.json and documentation templates
+  - [x] 5.6 Write comprehensive unit tests for all core modules
+  - [x] 5.7 Write integration tests for CLI commands and GitHub integration
+  - [x] 5.8 Test interactive mode functionality
+  - [x] 5.9 Test registry configuration and authentication
+- [x] 6.0 Documentation and NPM Package Deployment Preparation
+  - [x] 6.1 Write comprehensive README.md with installation and usage instructions
+  - [x] 6.2 Create .npmignore file to exclude development files from package
+  - [x] 6.3 Set up GitHub Actions workflow for automated testing and publishing
+  - [x] 6.4 Create CHANGELOG.md for version tracking
+  - [x] 6.5 Configure package.json for proper npm publishing (files, keywords, etc.)
+  - [x] 6.6 Add TypeScript declaration files generation to build process
+  - [x] 6.7 Test package installation and usage via npx locally
+  - [x] 6.8 Prepare for initial npm package publication

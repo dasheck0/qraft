@@ -1,35 +1,66 @@
 {
   "name": "dasheck0-unbox",
   "version": "1.0.0",
-  "description": "A CLI tool to unbox pre-configured template files into projects",
+  "description": "A powerful CLI tool to unbox pre-configured template files from GitHub repositories into your projects",
   "main": "dist/cli.js",
+  "types": "dist/cli.d.ts",
   "bin": {
     "unbox": "bin/unbox.js"
   },
   "scripts": {
     "build": "tsc",
+    "build:declarations": "tsc --declaration --emitDeclarationOnly --outDir dist",
     "dev": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
-    "prepublishOnly": "npm run build"
+    "test:coverage": "jest --coverage",
+    "lint": "echo 'No linting configured yet'",
+    "clean": "rm -rf dist/",
+    "prepublishOnly": "npm run clean && npm run build && npm test",
+    "postpublish": "echo 'Package published successfully!'"
   },
   "keywords": [
     "cli",
     "template",
     "scaffold",
     "unbox",
-    "project-generator"
+    "project-generator",
+    "github",
+    "templates",
+    "boilerplate",
+    "code-generator",
+    "developer-tools",
+    "automation",
+    "workflow",
+    "npx"
   ],
   "author": "Stefan Neidig <s.neidig@nanogiants.de> (https://nanogiants.de/)",
   "license": "MIT",
+  "homepage": "https://github.com/dasheck0/unbox#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dasheck0/unbox.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dasheck0/unbox/issues"
+  },
   "files": [
     "dist/",
     "bin/",
-    "boxes/"
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=16.0.0",
+    "npm": ">=7.0.0"
   },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "preferGlobal": true,
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/inquirer": "^9.0.8",
