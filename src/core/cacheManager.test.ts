@@ -12,7 +12,7 @@ describe('CacheManager', () => {
     const testCacheConfig = {
       enabled: true,
       ttl: 3600,
-      directory: '/tmp/test-unbox-cache'
+      directory: '/tmp/test-qreate-cache'
     };
 
     cacheManager = new CacheManager(testCacheConfig);
@@ -35,7 +35,7 @@ describe('CacheManager', () => {
     it('should create CacheManager with provided config', () => {
       expect(cacheManager.isEnabled()).toBe(true);
       expect(cacheManager.getTTL()).toBe(3600);
-      expect(cacheManager.getCacheDirectory()).toBe('/tmp/test-unbox-cache');
+      expect(cacheManager.getCacheDirectory()).toBe('/tmp/test-qreate-cache');
     });
 
     it('should create CacheManager with default config', () => {

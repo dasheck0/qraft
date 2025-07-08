@@ -33,7 +33,7 @@ export function cacheCommand(boxManager: BoxManager): Command {
 
         if (!config.cache.enabled) {
           console.log(chalk.gray('\nCache is disabled. Enable it with:'));
-          console.log(chalk.cyan('  unbox config cache --enable'));
+          console.log(chalk.cyan('  qreate config cache --enable'));
           return;
         }
 
