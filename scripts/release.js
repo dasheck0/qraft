@@ -294,7 +294,7 @@ class ReleaseManager {
 
   commitChanges(version) {
     execSync('git add package.json CHANGELOG.md');
-    execSync(`git commit -m "release: ${version}"`);
+    execSync(`git commit -m "chore: release ${version}"`);
   }
 
   createTag(version) {
