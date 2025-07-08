@@ -96,7 +96,7 @@ Local Release Script → Git Push → GitHub Actions → NPM Publish + GitHub Re
 - Select 1 (patch), 2 (minor), or 3 (major) when prompted for version bump
 
 **CI doesn't trigger**
-- Ensure the commit message starts with `release:` (handled automatically by script)
+- Ensure the commit message starts with `chore: release` (handled automatically by script)
 - Check that you're pushing to the `master` branch
 
 **NPM publish fails**

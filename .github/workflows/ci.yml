@@ -88,7 +88,7 @@ jobs:
     name: Publish to NPM and Create Release
     runs-on: ubuntu-latest
     needs: [test, build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && startsWith(github.event.head_commit.message, 'release:')
+    if: "github.event_name == 'push' && github.ref == 'refs/heads/master' && startsWith(github.event.head_commit.message, 'chore: release')"
 
     steps:
     - name: Checkout code
@@ -131,16 +131,18 @@ jobs:
         CHANGELOG_CONTENT=$(awk "/## \[$VERSION\]/{flag=1; next} /## \[/{flag=0} flag" CHANGELOG.md || echo "Release $VERSION")
         # Save to file to handle multiline content
         echo "$CHANGELOG_CONTENT" > /tmp/changelog.txt
-        echo "content<<EOF" >> $GITHUB_OUTPUT
-        cat /tmp/changelog.txt >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        {
+          echo "content<<EOF"
+          cat /tmp/changelog.txt
+          echo "EOF"
+        } >> $GITHUB_OUTPUT
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: "v${{ steps.package-version.outputs.version }}"
         name: "Release v${{ steps.package-version.outputs.version }}"
-        body: ${{ steps.changelog.outputs.content }}
+        body: "${{ steps.changelog.outputs.content }}"
         draft: false
         prerelease: false
       env:
