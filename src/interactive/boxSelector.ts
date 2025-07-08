@@ -32,7 +32,7 @@ export class InteractiveBoxSelector {
         if (registries.length === 0) {
           console.log(chalk.red('❌ No registries configured.'));
           console.log(chalk.gray('Add a registry first:'));
-          console.log(chalk.cyan('  qreate config add-registry <name> <repository>'));
+          console.log(chalk.cyan('  qraftconfig add-registry <name> <repository>'));
           return null;
         }
 

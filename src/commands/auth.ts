@@ -61,7 +61,7 @@ export function authCommand(boxManager: BoxManager): Command {
       try {
         if (!options.registry) {
           console.error(chalk.red('Error: Registry name is required'));
-          console.error(chalk.gray('Use: qreate auth token --registry <name> --token <token>'));
+          console.error(chalk.gray('Use: qraftauth token --registry <name> --token <token>'));
           process.exit(1);
         }
         
@@ -146,7 +146,7 @@ export function authCommand(boxManager: BoxManager): Command {
           if (!hasAuth) {
             console.log(chalk.yellow('No authentication configured for this registry'));
             console.log(chalk.gray('Set up authentication:'));
-            console.log(chalk.cyan(`  qreate auth token --registry ${options.registry}`));
+            console.log(chalk.cyan(`  qraftauth token --registry ${options.registry}`));
             return;
           }
           
@@ -170,7 +170,7 @@ export function authCommand(boxManager: BoxManager): Command {
           if (!hasAuth) {
             console.log(chalk.yellow('No authentication configured'));
             console.log(chalk.gray('Set up authentication:'));
-            console.log(chalk.cyan('  qreate auth login'));
+            console.log(chalk.cyan('  qraftauth login'));
             return;
           }
           

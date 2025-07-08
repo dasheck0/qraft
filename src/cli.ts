@@ -17,8 +17,8 @@ const configManager = new ConfigManager();
 const boxManager = new BoxManager(configManager);
 
 program
-  .name('qreate')
-  .description('A CLI tool to qreate structured project setups from GitHub template repositories')
+  .name('qraft')
+  .description('A CLI tool to qraft structured project setups from GitHub template repositories')
   .version('1.0.0')
   .option('-v, --verbose', 'enable verbose output')
   .option('-r, --registry <registry>', 'override default registry')
@@ -26,7 +26,7 @@ program
     // Set global options
     const opts = thisCommand.opts();
     if (opts.verbose) {
-      process.env.QREATE_VERBOSE = 'true';
+      process.env.QRAFT_VERBOSE = 'true';
     }
   });
 

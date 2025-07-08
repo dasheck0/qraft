@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Improved package configuration for npm publishing
 - Downgraded chalk from v5 to v4 for CommonJS compatibility
-- Renamed project from "unbox" to "qreate" for npm availability
+- Renamed project from "unbox" to "qraft" for npm availability
 
 ### Fixed
 - Package file inclusion and exclusion rules
@@ -103,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Global configuration file support (.unboxrc)
   - Registry configuration with custom GitHub repositories
   - Token management for private repository access
-  - Default registry configuration (dasheck0/qreate-templates)
+  - Default registry configuration (dasheck0/qraft-templates)
 
 - **Developer Experience**
   - TypeScript implementation with full type safety
@@ -160,5 +160,5 @@ This project follows [Semantic Versioning](https://semver.org/):
 - **PATCH** version for backwards-compatible bug fixes
 
 ### Links
-- [Unreleased]: https://github.com/dasheck0/qreate/compare/v1.0.0...HEAD
-- [1.0.0]: https://github.com/dasheck0/qreate/releases/tag/v1.0.0
+- [Unreleased]: https://github.com/dasheck0/qraft/compare/v1.0.0...HEAD
+- [1.0.0]: https://github.com/dasheck0/qraft/releases/tag/v1.0.0

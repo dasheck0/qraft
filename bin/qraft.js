@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// Binary entry point for the qreate CLI
+// Binary entry point for the qraft CLI
 // This file is referenced in package.json "bin" field
 
 const path = require('path');

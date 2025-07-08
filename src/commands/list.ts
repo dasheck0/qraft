@@ -87,20 +87,20 @@ export async function listCommand(boxManager: BoxManager, options: ListOptions):
       });
     }
     
-    console.log(chalk.gray('\nUse "qreate copy <box-name>" to copy a box to your project.'));
-    console.log(chalk.gray('Use "qreate info <box-name>" to see detailed information about a box.'));
+    console.log(chalk.gray('\nUse "qraftcopy <box-name>" to copy a box to your project.'));
+    console.log(chalk.gray('Use "qraftinfo <box-name>" to see detailed information about a box.'));
     
   } catch (error) {
     if (error instanceof Error && error.message.includes('Authentication failed')) {
       console.error(chalk.red('\n🔐 Authentication Error'));
       console.error(chalk.gray('This registry requires authentication. Set up your GitHub token:'));
-      console.error(chalk.cyan('  qreate auth login'));
+      console.error(chalk.cyan('  qraftauth login'));
       console.error(chalk.gray('Or set a token for this specific registry:'));
-      console.error(chalk.cyan(`  qreate auth token --registry ${options.registry || 'default'} <your-token>`));
+      console.error(chalk.cyan(`  qraftauth token --registry ${options.registry || 'default'} <your-token>`));
     } else if (error instanceof Error && error.message.includes('rate limit')) {
       console.error(chalk.red('\n⏱️  Rate Limit Exceeded'));
       console.error(chalk.gray('GitHub API rate limit exceeded. Set up authentication to increase limits:'));
-      console.error(chalk.cyan('  qreate auth login'));
+      console.error(chalk.cyan('  qraftauth login'));
     } else {
       throw error;
     }

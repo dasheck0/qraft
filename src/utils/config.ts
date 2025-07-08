@@ -19,7 +19,7 @@ export class ConfigManager {
    * @returns string Path to the default config file
    */
   private getDefaultConfigPath(): string {
-    return path.join(os.homedir(), '.qreaterc');
+    return path.join(os.homedir(), '.qraftc');
   }
 
   /**
@@ -84,14 +84,14 @@ export class ConfigManager {
       registries: {
         'dasheck0': {
           name: 'dasheck0',
-          repository: 'dasheck0/qreate-templates',
+          repository: 'dasheck0/qrafttemplates',
           isDefault: true
         }
       },
       cache: {
         enabled: true,
         ttl: 3600, // 1 hour
-        directory: path.join(os.homedir(), '.cache', 'qreate')
+        directory: path.join(os.homedir(), '.cache', 'qraft')
       }
     };
   }
@@ -253,7 +253,7 @@ export class ConfigManager {
       config.cache = {
         enabled: true,
         ttl: 3600,
-        directory: path.join(os.homedir(), '.cache', 'qreate')
+        directory: path.join(os.homedir(), '.cache', 'qraft')
       };
     }
 

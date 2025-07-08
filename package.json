@@ -1,11 +1,11 @@
 {
-  "name": "qreate",
+  "name": "qraft",
   "version": "1.0.5",
-  "description": "A powerful CLI tool to qreate structured project setups from GitHub template repositories",
+  "description": "A powerful CLI tool to qraft structured project setups from GitHub template repositories",
   "main": "dist/cli.js",
   "types": "dist/cli.d.ts",
   "bin": {
-    "qreate": "bin/qreate.js"
+    "qraft": "bin/qraft.js"
   },
   "scripts": {
     "build": "tsc",
@@ -25,7 +25,8 @@
     "cli",
     "template",
     "scaffold",
-    "qreate",
+    "qraft",
+    "craft",
     "create",
     "project-generator",
     "github",
@@ -39,13 +40,13 @@
   ],
   "author": "Stefan Neidig <s.neidig@nanogiants.de> (https://nanogiants.de/)",
   "license": "MIT",
-  "homepage": "https://github.com/dasheck0/qreate#readme",
+  "homepage": "https://github.com/dasheck0/qraft#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dasheck0/qreate.git"
+    "url": "git+https://github.com/dasheck0/qraft.git"
   },
   "bugs": {
-    "url": "https://github.com/dasheck0/qreate/issues"
+    "url": "https://github.com/dasheck0/qraft/issues"
   },
   "files": [
     "dist/",

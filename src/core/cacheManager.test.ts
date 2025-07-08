@@ -12,7 +12,7 @@ describe('CacheManager', () => {
     const testCacheConfig = {
       enabled: true,
       ttl: 3600,
-      directory: '/tmp/test-qreate-cache'
+      directory: '/tmp/test-qraftcache'
     };
 
     cacheManager = new CacheManager(testCacheConfig);
@@ -35,14 +35,14 @@ describe('CacheManager', () => {
     it('should create CacheManager with provided config', () => {
       expect(cacheManager.isEnabled()).toBe(true);
       expect(cacheManager.getTTL()).toBe(3600);
-      expect(cacheManager.getCacheDirectory()).toBe('/tmp/test-qreate-cache');
+      expect(cacheManager.getCacheDirectory()).toBe('/tmp/test-qraftcache');
     });
 
     it('should create CacheManager with default config', () => {
       const defaultManager = new CacheManager(undefined);
       expect(defaultManager.isEnabled()).toBe(true);
       expect(defaultManager.getTTL()).toBe(3600);
-      expect(defaultManager.getCacheDirectory()).toContain('.cache/qreate');
+      expect(defaultManager.getCacheDirectory()).toContain('.cache/qraft');
     });
 
     it('should handle disabled cache', () => {

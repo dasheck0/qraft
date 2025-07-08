@@ -8,7 +8,7 @@ describe('ConfigManager', () => {
 
   beforeEach(() => {
     // Use a temporary config path for testing
-    tempConfigPath = '/tmp/test-qreaterc';
+    tempConfigPath = '/tmp/test-qraftc';
     configManager = new ConfigManager(tempConfigPath);
   });
 
@@ -19,7 +19,7 @@ describe('ConfigManager', () => {
 
     it('should create ConfigManager with default config path', () => {
       const defaultManager = new ConfigManager();
-      expect(defaultManager.getConfigPath()).toContain('.qreaterc');
+      expect(defaultManager.getConfigPath()).toContain('.qraftc');
     });
   });
 
@@ -30,7 +30,7 @@ describe('ConfigManager', () => {
       expect(config.defaultRegistry).toBe('dasheck0');
       expect(config.registries).toBeDefined();
       expect(config.registries['dasheck0']).toBeDefined();
-      expect(config.registries['dasheck0'].repository).toBe('dasheck0/qreate-templates');
+      expect(config.registries['dasheck0'].repository).toBe('dasheck0/qrafttemplates');
       expect(config.registries['dasheck0'].isDefault).toBe(true);
       expect(config.cache).toBeDefined();
       expect(config.cache?.enabled).toBe(true);

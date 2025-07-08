@@ -1,19 +1,21 @@
 <div align="left" style="margin-bottom: 16px;">
-  <img src="logo.png" alt="Qreate CLI Logo" width="200" height="auto">
+  <img src="logo.png" alt="Qraft CLI Logo" width="200" height="auto">
 </div>
 
-A powerful CLI tool to qreate structured project setups from GitHub template repositories. Pull standardized project templates, documentation scaffolds, and reusable resources from GitHub repositories at any stage of development.
+# Qraft CLI
 
-[![npm version](https://badge.fury.io/js/qreate.svg)](https://badge.fury.io/js/qreate)
+A powerful CLI tool to qraft structured project setups from GitHub template repositories. Pull standardized project templates, documentation scaffolds, and reusable resources from GitHub repositories at any stage of development.
+
+[![npm version](https://badge.fury.io/js/qraft.svg)](https://badge.fury.io/js/qraft)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Why qreate?
+## Why qraft?
 
-We chose the name **qreate** as a purposeful twist on “create.” It reflects the tool’s purpose: to help developers _create_ structured project setups quickly and consistently using modular templates. The “q” adds uniqueness and avoids naming collisions, while still being short, intuitive, and natural to type in a CLI context:
+We chose the name **qraft** as a purposeful twist on “craft.” It reflects the tool’s purpose: to help developers _craft_ structured project setups quickly and consistently using modular templates. The “q” adds uniqueness and avoids naming collisions, while still being short, intuitive, and natural to type in a CLI context:
 
 ```bash
-npx qreate n8n
-npx qreate copy readme --target ./docs
+npx qraft n8n
+npx qraft copy readme --target ./docs
 ```
 
 Also: Have you ever tried to come up with a short, unique and fitting name for your CLI tool that isn't taken already on npm?
@@ -34,19 +36,19 @@ Also: Have you ever tried to come up with a short, unique and fitting name for y
 
 ### Global Installation
 ```bash
-npm install -g qreate
+npm install -g qraft
 ```
 
 ### Use with npx (Recommended)
 ```bash
-npx qreate <command>
+npx qraft <command>
 ```
 
 ## Quick Start
 
-Suppose you have a repository `dasheck0/qreate-templates` with the following structure:
+Suppose you have a repository `dasheck0/qraft-templates` with the following structure:
 ```
-dasheck0/qreate-templates/
+dasheck0/qraft-templates/
 ├── n8n/
 │   ├── manifest.json
 │   ├── package.json
@@ -61,7 +63,7 @@ dasheck0/qreate-templates/
     ├── .tasks/
 ```
 
-Each directory serves as remote `box` that can be `qreated` into your current directory. Each `box` must contain a `manifest.json` file with the following structure:
+Each directory serves as remote `box` that can be `qraftd` into your current directory. Each `box` must contain a `manifest.json` file with the following structure:
 ```json
 {
   "name": "n8n",
@@ -93,28 +95,28 @@ Here is an overview of the paramaters of the `manifest.json` file:
 ### Copy a Template Box
 ```bash
 # Copy a template to current directory
-npx qreate copy n8n
+npx qraft copy n8n
 
 # Copy to specific directory
-npx qreate copy readme --target ./docs
+npx qraft copy readme --target ./docs
 
 # Force overwrite existing files
-npx qreate copy .tasks --force
+npx qraft copy .tasks --force
 ```
 
 ### List Available Templates
 ```bash
 # List all available boxes
-npx qreate list
+npx qraft list
 
 # Interactive browsing mode
-npx qreate list -i
+npx qraft list -i
 ```
 
 ### Interactive Mode
 ```bash
 # Launch interactive mode for browsing and copying
-npx qreate copy n8n -i
+npx qraft copy n8n -i
 ```
 
 ## Commands
@@ -123,7 +125,7 @@ npx qreate copy n8n -i
 Copy a template box to your project.
 
 ```bash
-qreate copy <box> [options]
+qraft copy <box> [options]
 ```
 
 **Options:**
@@ -134,17 +136,17 @@ qreate copy <box> [options]
 
 **Examples:**
 ```bash
-qreate copy n8n
-qreate copy readme --target ./documentation
-qreate copy .tasks --force
-qreate copy myorg/custom-template --registry mycompany/templates
+qraft copy n8n
+qraft copy readme --target ./documentation
+qraft copy .tasks --force
+qraft copy myorg/custom-template --registry mycompany/templates
 ```
 
 ### `list`
 List available template boxes.
 
 ```bash
-qreate list [options]
+qraft list [options]
 ```
 
 **Options:**
@@ -154,16 +156,16 @@ qreate list [options]
 
 **Examples:**
 ```bash
-qreate list
-qreate list --registry mycompany/templates
-qreate list --interactive
+qraft list
+qraft list --registry mycompany/templates
+qraft list --interactive
 ```
 
 ### `info <box>`
 Show detailed information about a template box.
 
 ```bash
-qreate info <box> [options]
+qraft info <box> [options]
 ```
 
 **Options:**
@@ -171,15 +173,15 @@ qreate info <box> [options]
 
 **Examples:**
 ```bash
-qreate info n8n
-qreate info myorg/custom-template --registry mycompany/templates
+qraft info n8n
+qraft info myorg/custom-template --registry mycompany/templates
 ```
 
 ### `config`
 Manage configuration settings.
 
 ```bash
-qreate config <command> [options]
+qraft config <command> [options]
 ```
 
 **Subcommands:**
@@ -192,17 +194,17 @@ qreate config <command> [options]
 
 **Examples:**
 ```bash
-qreate config show
-qreate config set defaultRegistry mycompany/templates
-qreate config add-registry mycompany mycompany/templates
-qreate config remove-registry mycompany
+qraft config show
+qraft config set defaultRegistry mycompany/templates
+qraft config add-registry mycompany mycompany/templates
+qraft config remove-registry mycompany
 ```
 
 ### `auth`
 Manage GitHub authentication.
 
 ```bash
-qreate auth <command> [options]
+qraft auth <command> [options]
 ```
 
 **Subcommands:**
@@ -213,17 +215,17 @@ qreate auth <command> [options]
 
 **Examples:**
 ```bash
-qreate auth login
-qreate auth token --registry mycompany ghp_xxxxxxxxxxxx
-qreate auth status
-qreate auth logout
+qraft auth login
+qraft auth token --registry mycompany ghp_xxxxxxxxxxxx
+qraft auth status
+qraft auth logout
 ```
 
 ### `cache`
 Manage local cache.
 
 ```bash
-qreate cache <command> [options]
+qraft cache <command> [options]
 ```
 
 **Subcommands:**
@@ -234,30 +236,30 @@ qreate cache <command> [options]
 
 **Examples:**
 ```bash
-qreate cache status
-qreate cache clear
-qreate cache info n8n
+qraft cache status
+qraft cache clear
+qraft cache info n8n
 ```
 
 ## Configuration
 
 ### Registry Configuration
 
-Qreate supports multiple template registries. The default registry is `dasheck0/qreate-templates`.
+qraft supports multiple template registries. The default registry is `dasheck0/qraft-templates`.
 
 #### Adding a Registry
 ```bash
-qreate config add-registry mycompany mycompany/templates
+qraft config add-registry mycompany mycompany/templates
 ```
 
 #### Setting Default Registry
 ```bash
-qreate config set defaultRegistry mycompany/templates
+qraft config set defaultRegistry mycompany/templates
 ```
 
 #### Using Registry Override
 ```bash
-qreate copy template-name --registry mycompany/templates
+qraft copy template-name --registry mycompany/templates
 ```
 
 ### Authentication
@@ -266,10 +268,10 @@ For private repositories, you'll need to set up GitHub authentication:
 
 ```bash
 # Interactive setup
-qreate auth login
+qraft auth login
 
 # Or set a token directly
-qreate auth token --registry mycompany ghp_xxxxxxxxxxxx
+qraft auth token --registry mycompany ghp_xxxxxxxxxxxx
 ```
 
 ### Box Reference Format
@@ -289,7 +291,7 @@ Boxes can be referenced in several ways:
 
 ## Environment Variables
 
-- `QREATE_VERBOSE` - Enable verbose logging
+- `QRAFT_VERBOSE` - Enable verbose logging
 - `GITHUB_TOKEN` - Default GitHub token for authentication
 
 ## Troubleshooting
@@ -297,15 +299,15 @@ Boxes can be referenced in several ways:
 ### Authentication Issues
 If you encounter authentication errors:
 
-1. Check your token: `qreate auth status`
-2. Set up authentication: `qreate auth login`
+1. Check your token: `qraft auth status`
+2. Set up authentication: `qraft auth login`
 3. Verify token permissions (repo access required for private repos)
 
 ### Cache Issues
 If templates seem outdated:
 
-1. Clear cache: `qreate cache clear`
-2. Check cache status: `qreate cache status`
+1. Clear cache: `qraft cache clear`
+2. Check cache status: `qraft cache status`
 
 ### Network Issues
 If you can't connect to GitHub:
@@ -328,6 +330,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- 📖 [Documentation](https://github.com/dasheck0/qreate)
-- 🐛 [Issue Tracker](https://github.com/dasheck0/qreate/issues)
-- 💬 [Discussions](https://github.com/dasheck0/qreate/discussions)
+- 📖 [Documentation](https://github.com/dasheck0/qraft)
+- 🐛 [Issue Tracker](https://github.com/dasheck0/qraft/issues)
+- 💬 [Discussions](https://github.com/dasheck0/qraft/discussions)

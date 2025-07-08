@@ -12,7 +12,7 @@ export class CacheManager {
   private enabled: boolean;
 
   constructor(config: RegistryManagerConfig['cache']) {
-    this.cacheDirectory = config?.directory || path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.cache', 'qreate');
+    this.cacheDirectory = config?.directory || path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.cache', 'qraft');
     this.ttl = config?.ttl || 3600; // Default 1 hour
     this.enabled = config?.enabled !== false; // Default enabled
   }

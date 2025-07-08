@@ -41,8 +41,8 @@ jobs:
     - name: Test CLI functionality
       run: |
         # Test that the CLI can be executed
-        node bin/qreate.js --help
-        node bin/qreate.js --version
+        node bin/qraft.js --help
+        node bin/qraft.js --version
 
   build:
     name: Build and Package
