@@ -116,13 +116,6 @@ jobs:
       id: package-version
       run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
-    - name: Create Git tag
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git tag "v${{ steps.package-version.outputs.version }}"
-        git push origin "v${{ steps.package-version.outputs.version }}"
-
     - name: Extract changelog for current version
       id: changelog
       run: |
