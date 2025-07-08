@@ -1,6 +1,6 @@
 {
   "name": "qraft",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "A powerful CLI tool to qraft structured project setups from GitHub template repositories",
   "main": "dist/cli.js",
   "types": "dist/cli.d.ts",

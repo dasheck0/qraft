@@ -25,6 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+
+## [1.0.7] - 2025-07-08
+
+### Added
+- complete project rename from qreate to qraft
+
+### Maintenance
+- rename author
+
 ## [1.0.6] - 2025-07-08
 
 ### Maintenance
