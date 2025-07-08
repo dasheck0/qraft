@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI test failures on Node.js 18+ due to ES module import issues with chalk v5
 
 
+
+## [1.0.2] - 2025-07-08
+
+### Fixed
+- resolve YAML syntax errors in GitHub Actions workflow
+
 ## [1.0.1] - 2025-07-08
 
 ### Added
