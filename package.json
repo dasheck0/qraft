@@ -1,6 +1,6 @@
 {
   "name": "unbox",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A powerful CLI tool to unbox pre-configured template files from GitHub repositories into your projects",
   "main": "dist/cli.js",
   "types": "dist/cli.d.ts",
