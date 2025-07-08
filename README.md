@@ -1,4 +1,6 @@
-# Qreate CLI
+<div align="left" style="margin-bottom: 16px;">
+  <img src="logo.png" alt="Qreate CLI Logo" width="200" height="auto">
+</div>
 
 A powerful CLI tool to qreate structured project setups from GitHub template repositories. Pull standardized project templates, documentation scaffolds, and reusable resources from GitHub repositories at any stage of development.
 
