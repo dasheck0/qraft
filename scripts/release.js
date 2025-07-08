@@ -135,12 +135,14 @@ class ReleaseManager {
       output: process.stdout
     });
 
+    const currentVersion = this.getCurrentVersion();
+
     return new Promise((resolve) => {
       console.log('\nSelect version bump type:');
-      console.log('1. patch (x.x.X) - Bug fixes');
-      console.log('2. minor (x.X.x) - New features');
-      console.log('3. major (X.x.x) - Breaking changes');
-      
+      console.log(`1. patch (${this.calculateNewVersion(currentVersion, 'patch')}) - Bug fixes`);
+      console.log(`2. minor (${this.calculateNewVersion(currentVersion, 'minor')}) - New features`);
+      console.log(`3. major (${this.calculateNewVersion(currentVersion, 'major')}) - Breaking changes`);
+
       rl.question('\nEnter choice (1-3): ', (answer) => {
         rl.close();
         const choices = { '1': 'patch', '2': 'minor', '3': 'major' };
