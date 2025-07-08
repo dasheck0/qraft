@@ -17,7 +17,9 @@
     "lint": "echo 'No linting configured yet'",
     "clean": "rm -rf dist/",
     "prepublishOnly": "npm run clean && npm run build && npm test",
-    "postpublish": "echo 'Package published successfully!'"
+    "postpublish": "echo 'Package published successfully!'",
+    "release": "node scripts/release.js",
+    "release:dry": "node scripts/release.js --dry-run"
   },
   "keywords": [
     "cli",
