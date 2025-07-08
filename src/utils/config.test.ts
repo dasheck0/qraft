@@ -8,7 +8,7 @@ describe('ConfigManager', () => {
 
   beforeEach(() => {
     // Use a temporary config path for testing
-    tempConfigPath = '/tmp/test-unboxrc';
+    tempConfigPath = '/tmp/test-qreaterc';
     configManager = new ConfigManager(tempConfigPath);
   });
 
@@ -19,18 +19,18 @@ describe('ConfigManager', () => {
 
     it('should create ConfigManager with default config path', () => {
       const defaultManager = new ConfigManager();
-      expect(defaultManager.getConfigPath()).toContain('.unboxrc');
+      expect(defaultManager.getConfigPath()).toContain('.qreaterc');
     });
   });
 
   describe('createDefaultConfig', () => {
     it('should create valid default configuration', async () => {
       const config = await configManager.getConfig();
-      
+
       expect(config.defaultRegistry).toBe('dasheck0');
       expect(config.registries).toBeDefined();
       expect(config.registries['dasheck0']).toBeDefined();
-      expect(config.registries['dasheck0'].repository).toBe('dasheck0/unbox-templates');
+      expect(config.registries['dasheck0'].repository).toBe('dasheck0/qreate-templates');
       expect(config.registries['dasheck0'].isDefault).toBe(true);
       expect(config.cache).toBeDefined();
       expect(config.cache?.enabled).toBe(true);

@@ -1,7 +1,7 @@
+import * as crypto from 'crypto';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as crypto from 'crypto';
-import { CacheEntry, BoxReference, BoxManifest, RegistryManagerConfig } from '../types';
+import { BoxManifest, BoxReference, CacheEntry, RegistryManagerConfig } from '../types';
 
 /**
  * CacheManager handles local caching of downloaded boxes for improved performance
@@ -12,7 +12,7 @@ export class CacheManager {
   private enabled: boolean;
 
   constructor(config: RegistryManagerConfig['cache']) {
-    this.cacheDirectory = config?.directory || path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.cache', 'unbox');
+    this.cacheDirectory = config?.directory || path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.cache', 'qreate');
     this.ttl = config?.ttl || 3600; // Default 1 hour
     this.enabled = config?.enabled !== false; // Default enabled
   }

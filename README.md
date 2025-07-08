@@ -1,9 +1,21 @@
-# Unbox CLI
+# Qreate CLI
 
-A powerful CLI tool to unbox pre-configured template files into your projects. Pull standardized project templates, documentation scaffolds, and reusable resources from GitHub repositories at any stage of development.
+A powerful CLI tool to qreate structured project setups from GitHub template repositories. Pull standardized project templates, documentation scaffolds, and reusable resources from GitHub repositories at any stage of development.
 
-[![npm version](https://badge.fury.io/js/dasheck0-unbox.svg)](https://badge.fury.io/js/dasheck0-unbox)
+[![npm version](https://badge.fury.io/js/qreate.svg)](https://badge.fury.io/js/qreate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Why qreate?
+
+We chose the name **qreate** as a purposeful twist on “create.” It reflects the tool’s purpose: to help developers _create_ structured project setups quickly and consistently using modular templates. The “q” adds uniqueness and avoids naming collisions, while still being short, intuitive, and natural to type in a CLI context:
+
+```bash
+npx qreate n8n
+npx qreate copy readme --target ./docs
+```
+
+Also: Have you ever tried to come up with a short, unique and fitting name for your CLI tool that isn't taken already on npm?
+
 
 ## Features
 
@@ -20,19 +32,19 @@ A powerful CLI tool to unbox pre-configured template files into your projects. P
 
 ### Global Installation
 ```bash
-npm install -g unbox
+npm install -g qreate
 ```
 
 ### Use with npx (Recommended)
 ```bash
-npx unbox <command>
+npx qreate <command>
 ```
 
 ## Quick Start
 
-Suppose you have a repository `dasheck0/unbox-templates` with the following structure:
+Suppose you have a repository `dasheck0/qreate-templates` with the following structure:
 ```
-dasheck0/unbox-templates/
+dasheck0/qreate-templates/
 ├── n8n/
 │   ├── manifest.json
 │   ├── package.json
@@ -47,7 +59,7 @@ dasheck0/unbox-templates/
     ├── .tasks/
 ```
 
-Each directory serves as remote `box` that can be `unboxed` into your current directory. Each `box` must contain a `manifest.json` file with the following structure:
+Each directory serves as remote `box` that can be `qreated` into your current directory. Each `box` must contain a `manifest.json` file with the following structure:
 ```json
 {
   "name": "n8n",
@@ -58,7 +70,7 @@ Each directory serves as remote `box` that can be `unboxed` into your current di
   "tags": ["backend", "n8n", "automation"],
   "exclude": ["manifest.json"],
   "postInstall": [
-    "Please run `npm install` after unboxing."
+    "Please run `npm install` after qreating."
   ]
 }
 ``` 
@@ -79,28 +91,28 @@ Here is an overview of the paramaters of the `manifest.json` file:
 ### Copy a Template Box
 ```bash
 # Copy a template to current directory
-npx unbox copy n8n
+npx qreate copy n8n
 
 # Copy to specific directory
-npx unbox copy readme --target ./docs
+npx qreate copy readme --target ./docs
 
 # Force overwrite existing files
-npx unbox copy .tasks --force
+npx qreate copy .tasks --force
 ```
 
 ### List Available Templates
 ```bash
 # List all available boxes
-npx unbox list
+npx qreate list
 
 # Interactive browsing mode
-npx unbox list -i
+npx qreate list -i
 ```
 
 ### Interactive Mode
 ```bash
 # Launch interactive mode for browsing and copying
-npx unbox copy n8n -i
+npx qreate copy n8n -i
 ```
 
 ## Commands
@@ -109,7 +121,7 @@ npx unbox copy n8n -i
 Copy a template box to your project.
 
 ```bash
-unbox copy <box> [options]
+qreate copy <box> [options]
 ```
 
 **Options:**
@@ -120,17 +132,17 @@ unbox copy <box> [options]
 
 **Examples:**
 ```bash
-unbox copy n8n
-unbox copy readme --target ./documentation
-unbox copy .tasks --force
-unbox copy myorg/custom-template --registry mycompany/templates
+qreate copy n8n
+qreate copy readme --target ./documentation
+qreate copy .tasks --force
+qreate copy myorg/custom-template --registry mycompany/templates
 ```
 
 ### `list`
 List available template boxes.
 
 ```bash
-unbox list [options]
+qreate list [options]
 ```
 
 **Options:**
@@ -140,16 +152,16 @@ unbox list [options]
 
 **Examples:**
 ```bash
-unbox list
-unbox list --registry mycompany/templates
-unbox list --interactive
+qreate list
+qreate list --registry mycompany/templates
+qreate list --interactive
 ```
 
 ### `info <box>`
 Show detailed information about a template box.
 
 ```bash
-unbox info <box> [options]
+qreate info <box> [options]
 ```
 
 **Options:**
@@ -157,15 +169,15 @@ unbox info <box> [options]
 
 **Examples:**
 ```bash
-unbox info n8n
-unbox info myorg/custom-template --registry mycompany/templates
+qreate info n8n
+qreate info myorg/custom-template --registry mycompany/templates
 ```
 
 ### `config`
 Manage configuration settings.
 
 ```bash
-unbox config <command> [options]
+qreate config <command> [options]
 ```
 
 **Subcommands:**
@@ -178,17 +190,17 @@ unbox config <command> [options]
 
 **Examples:**
 ```bash
-unbox config show
-unbox config set defaultRegistry mycompany/templates
-unbox config add-registry mycompany mycompany/templates
-unbox config remove-registry mycompany
+qreate config show
+qreate config set defaultRegistry mycompany/templates
+qreate config add-registry mycompany mycompany/templates
+qreate config remove-registry mycompany
 ```
 
 ### `auth`
 Manage GitHub authentication.
 
 ```bash
-unbox auth <command> [options]
+qreate auth <command> [options]
 ```
 
 **Subcommands:**
@@ -199,17 +211,17 @@ unbox auth <command> [options]
 
 **Examples:**
 ```bash
-unbox auth login
-unbox auth token --registry mycompany ghp_xxxxxxxxxxxx
-unbox auth status
-unbox auth logout
+qreate auth login
+qreate auth token --registry mycompany ghp_xxxxxxxxxxxx
+qreate auth status
+qreate auth logout
 ```
 
 ### `cache`
 Manage local cache.
 
 ```bash
-unbox cache <command> [options]
+qreate cache <command> [options]
 ```
 
 **Subcommands:**
@@ -220,30 +232,30 @@ unbox cache <command> [options]
 
 **Examples:**
 ```bash
-unbox cache status
-unbox cache clear
-unbox cache info n8n
+qreate cache status
+qreate cache clear
+qreate cache info n8n
 ```
 
 ## Configuration
 
 ### Registry Configuration
 
-Unbox supports multiple template registries. The default registry is `dasheck0/unbox-templates`.
+Qreate supports multiple template registries. The default registry is `dasheck0/qreate-templates`.
 
 #### Adding a Registry
 ```bash
-unbox config add-registry mycompany mycompany/templates
+qreate config add-registry mycompany mycompany/templates
 ```
 
 #### Setting Default Registry
 ```bash
-unbox config set defaultRegistry mycompany/templates
+qreate config set defaultRegistry mycompany/templates
 ```
 
 #### Using Registry Override
 ```bash
-unbox copy template-name --registry mycompany/templates
+qreate copy template-name --registry mycompany/templates
 ```
 
 ### Authentication
@@ -252,10 +264,10 @@ For private repositories, you'll need to set up GitHub authentication:
 
 ```bash
 # Interactive setup
-unbox auth login
+qreate auth login
 
 # Or set a token directly
-unbox auth token --registry mycompany ghp_xxxxxxxxxxxx
+qreate auth token --registry mycompany ghp_xxxxxxxxxxxx
 ```
 
 ### Box Reference Format
@@ -273,20 +285,25 @@ Boxes can be referenced in several ways:
 - `--help` - Show help information
 - `--version` - Show version number
 
+## Environment Variables
+
+- `QREATE_VERBOSE` - Enable verbose logging
+- `GITHUB_TOKEN` - Default GitHub token for authentication
+
 ## Troubleshooting
 
 ### Authentication Issues
 If you encounter authentication errors:
 
-1. Check your token: `unbox auth status`
-2. Set up authentication: `unbox auth login`
+1. Check your token: `qreate auth status`
+2. Set up authentication: `qreate auth login`
 3. Verify token permissions (repo access required for private repos)
 
 ### Cache Issues
 If templates seem outdated:
 
-1. Clear cache: `unbox cache clear`
-2. Check cache status: `unbox cache status`
+1. Clear cache: `qreate cache clear`
+2. Check cache status: `qreate cache status`
 
 ### Network Issues
 If you can't connect to GitHub:
@@ -309,6 +326,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- 📖 [Documentation](https://github.com/dasheck0/unbox)
-- 🐛 [Issue Tracker](https://github.com/dasheck0/unbox/issues)
-- 💬 [Discussions](https://github.com/dasheck0/unbox/discussions)
+- 📖 [Documentation](https://github.com/dasheck0/qreate)
+- 🐛 [Issue Tracker](https://github.com/dasheck0/qreate/issues)
+- 💬 [Discussions](https://github.com/dasheck0/qreate/discussions)

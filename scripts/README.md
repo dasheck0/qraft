@@ -1,6 +1,6 @@
 # Release Scripts
 
-This directory contains scripts for managing releases of the unbox CLI tool.
+This directory contains scripts for managing releases of the qreate CLI tool.
 
 ## Release Script (`release.js`)
 

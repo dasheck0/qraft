@@ -1,11 +1,11 @@
 {
-  "name": "unbox",
+  "name": "qreate",
   "version": "1.0.4",
-  "description": "A powerful CLI tool to unbox pre-configured template files from GitHub repositories into your projects",
+  "description": "A powerful CLI tool to qreate structured project setups from GitHub template repositories",
   "main": "dist/cli.js",
   "types": "dist/cli.d.ts",
   "bin": {
-    "unbox": "bin/unbox.js"
+    "qreate": "bin/qreate.js"
   },
   "scripts": {
     "build": "tsc",
@@ -25,7 +25,8 @@
     "cli",
     "template",
     "scaffold",
-    "unbox",
+    "qreate",
+    "create",
     "project-generator",
     "github",
     "templates",
@@ -38,13 +39,13 @@
   ],
   "author": "Stefan Neidig <s.neidig@nanogiants.de> (https://nanogiants.de/)",
   "license": "MIT",
-  "homepage": "https://github.com/dasheck0/unbox#readme",
+  "homepage": "https://github.com/dasheck0/qreate#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dasheck0/unbox.git"
+    "url": "git+https://github.com/dasheck0/qreate.git"
   },
   "bugs": {
-    "url": "https://github.com/dasheck0/unbox/issues"
+    "url": "https://github.com/dasheck0/qreate/issues"
   },
   "files": [
     "dist/",

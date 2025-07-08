@@ -1,5 +1,5 @@
+import { BoxManifest, BoxReference } from '../types';
 import { CacheManager } from './cacheManager';
-import { BoxReference, BoxManifest } from '../types';
 
 // Simple unit tests for CacheManager
 describe('CacheManager', () => {
@@ -42,7 +42,7 @@ describe('CacheManager', () => {
       const defaultManager = new CacheManager(undefined);
       expect(defaultManager.isEnabled()).toBe(true);
       expect(defaultManager.getTTL()).toBe(3600);
-      expect(defaultManager.getCacheDirectory()).toContain('.cache/unbox');
+      expect(defaultManager.getCacheDirectory()).toContain('.cache/qreate');
     });
 
     it('should handle disabled cache', () => {

@@ -48,7 +48,7 @@ export async function copyCommand(
       }
 
       console.error(chalk.gray('\nAvailable boxes:'));
-      console.error(chalk.cyan('  unbox list'));
+      console.error(chalk.cyan('  qreate list'));
       process.exit(1);
     }
     
@@ -139,15 +139,15 @@ export async function copyCommand(
       if (result.skippedFiles && result.skippedFiles.length > 0) {
         console.log(chalk.yellow(`   Skipped ${result.skippedFiles.length} existing files`));
         
-        if (process.env.UNBOX_VERBOSE) {
+        if (process.env.QREATE_VERBOSE) {
           console.log(chalk.gray('\n   Skipped files:'));
           result.skippedFiles.forEach(file => {
             console.log(chalk.gray(`     • ${path.relative(targetDirectory, file)}`));
           });
         }
       }
-      
-      if (result.copiedFiles && result.copiedFiles.length > 0 && process.env.UNBOX_VERBOSE) {
+
+      if (result.copiedFiles && result.copiedFiles.length > 0 && process.env.QREATE_VERBOSE) {
         console.log(chalk.gray('\n   Copied files:'));
         result.copiedFiles.forEach(file => {
           console.log(chalk.gray(`     • ${path.relative(targetDirectory, file)}`));
@@ -168,23 +168,23 @@ export async function copyCommand(
       console.error(chalk.red.bold('\n❌ Failed to copy box'));
       console.error(chalk.red(result.message));
       
-      if (result.error && process.env.UNBOX_VERBOSE) {
+      if (result.error && process.env.QREATE_VERBOSE) {
         console.error(chalk.gray('\nError details:'));
         console.error(chalk.gray(result.error.message));
       }
-      
+
       process.exit(1);
     }
-    
+
   } catch (error) {
     if (error instanceof Error && error.message.includes('Authentication failed')) {
       console.error(chalk.red('\n🔐 Authentication Error'));
       console.error(chalk.gray('This box requires authentication. Set up your GitHub token:'));
-      console.error(chalk.cyan('  unbox auth login'));
+      console.error(chalk.cyan('  qreate auth login'));
     } else if (error instanceof Error && error.message.includes('rate limit')) {
       console.error(chalk.red('\n⏱️  Rate Limit Exceeded'));
       console.error(chalk.gray('GitHub API rate limit exceeded. Set up authentication:'));
-      console.error(chalk.cyan('  unbox auth login'));
+      console.error(chalk.cyan('  qreate auth login'));
     } else {
       throw error;
     }

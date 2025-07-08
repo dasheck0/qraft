@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import { BoxInfo } from '../types';
 
 /**
- * Interactive prompt utilities for the unbox CLI
+ * Interactive prompt utilities for the qreate CLI
  */
 export class InteractivePrompts {
   

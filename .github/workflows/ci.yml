@@ -41,8 +41,8 @@ jobs:
     - name: Test CLI functionality
       run: |
         # Test that the CLI can be executed
-        node bin/unbox.js --help
-        node bin/unbox.js --version
+        node bin/qreate.js --help
+        node bin/qreate.js --version
 
   build:
     name: Build and Package
