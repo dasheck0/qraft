@@ -12,9 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Improved package configuration for npm publishing
+- Downgraded chalk from v5 to v4 for CommonJS compatibility
 
 ### Fixed
 - Package file inclusion and exclusion rules
+- CI test failures on Node.js 18+ due to ES module import issues with chalk v5
 
 ## [1.0.0] - 2024-07-07
 
