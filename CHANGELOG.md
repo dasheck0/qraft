@@ -18,6 +18,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Package file inclusion and exclusion rules
 - CI test failures on Node.js 18+ due to ES module import issues with chalk v5
 
+
+## [1.0.1] - 2025-07-08
+
+### Added
+- add automated release script and streamline CI workflow
+- complete documentation and npm package deployment preparation
+- implement comprehensive interactive mode for all CLI commands
+- add comprehensive test suite and project configuration
+- implement complete CLI interface with all commands
+- complete github registry integration with authentication
+- implement core box management system
+- complete project setup and configuration
+
+### Fixed
+- clean up github actions
+- downgrade chalk to v4 for CommonJS compatibility
+- resolve file discovery and defaultTarget issues
+
+### Documentation
+- update CHANGELOG with chalk downgrade fix
+- fix issues in readme file
+- add project ideas and notes file
+
+### Maintenance
+- set correct commit message in release
+- add release script
+- remove node 18
+- remove node 16
+- add pre commit hook
+- initial commit
+
 ## [1.0.0] - 2024-07-07
 
 ### Added
