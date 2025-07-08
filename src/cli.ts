@@ -120,23 +120,15 @@ program.action(() => {
   program.help();
 });
 
-// Error handling
-program.exitOverride((err) => {
-  if (err.code === 'commander.help') {
-    process.exit(0);
-  }
-  if (err.code === 'commander.version') {
-    process.exit(0);
-  }
-  console.error(chalk.red('CLI Error:'), err.message);
-  process.exit(1);
-});
-
 // Parse command line arguments
 export async function main() {
   try {
     await program.parseAsync(process.argv);
   } catch (error) {
+    // Don't show error for help or version commands
+    if (error instanceof Error && (error.message.includes('(outputHelp)') || error.message.includes('(outputVersion)'))) {
+      process.exit(0);
+    }
     console.error(chalk.red('Unexpected error:'), error instanceof Error ? error.message : 'Unknown error');
     process.exit(1);
   }
