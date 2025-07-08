@@ -20,15 +20,61 @@ A powerful CLI tool to unbox pre-configured template files into your projects. P
 
 ### Global Installation
 ```bash
-npm install -g dasheck0-unbox
+npm install -g unbox
 ```
 
 ### Use with npx (Recommended)
 ```bash
-npx dasheck0-unbox <command>
+npx unbox <command>
 ```
 
 ## Quick Start
+
+Suppose you have a repository `dasheck0/unbox-templates` with the following structure:
+```
+dasheck0/unbox-templates/
+├── n8n/
+│   ├── manifest.json
+│   ├── package.json
+│   ├── .env.example
+│   └── ...
+├── readme/
+│   ├── manifest.json
+│   ├── README.md
+│   └── ...
+└── .tasks/
+    ├── manifest.json
+    ├── .tasks/
+```
+
+Each directory serves as remote `box` that can be `unboxed` into your current directory. Each `box` must contain a `manifest.json` file with the following structure:
+```json
+{
+  "name": "n8n",
+  "description": "Standard files for n8n backend projects",
+  "author": "Your Name",
+  "version": "1.0.0",
+  "defaultTarget": "./n8n-setup",
+  "tags": ["backend", "n8n", "automation"],
+  "exclude": ["manifest.json"],
+  "postInstall": [
+    "Please run `npm install` after unboxing."
+  ]
+}
+``` 
+
+Here is an overview of the paramaters of the `manifest.json` file:
+
+| Parameter       | Description                                                                               |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| `name`          | Unique name of the box.                                                                   |
+| `description`   | Human-readable description of what this box contains. Is used for info command of the cli |
+| `author`        | Author of the box.                                                                        |
+| `version`       | Version of the box.                                                                       |
+| `defaultTarget` | Optional default target directory when no `--target` is specified.                        |
+| `tags`          | Optional tags for categorization. Can be searched from the cli                            |
+| `exclude`       | Files to exclude when copying (relative to box directory).                                |
+| `postInstall`   | Optional post-installation steps to show to the user.                                     |
 
 ### Copy a Template Box
 ```bash
@@ -48,13 +94,13 @@ npx unbox copy .tasks --force
 npx unbox list
 
 # Interactive browsing mode
-npx unbox list --interactive
+npx unbox list -i
 ```
 
 ### Interactive Mode
 ```bash
 # Launch interactive mode for browsing and copying
-npx unbox copy n8n --interactive
+npx unbox copy n8n -i
 ```
 
 ## Commands
@@ -208,7 +254,7 @@ For private repositories, you'll need to set up GitHub authentication:
 # Interactive setup
 unbox auth login
 
-# Set token directly
+# Or set a token directly
 unbox auth token --registry mycompany ghp_xxxxxxxxxxxx
 ```
 
@@ -220,42 +266,12 @@ Boxes can be referenced in several ways:
 - `registry/boxname` - Uses specific registry
 - `owner/repo/boxname` - Full GitHub path
 
-## Template Box Structure
-
-Template boxes are directories in GitHub repositories with the following structure:
-
-```
-box-name/
-├── manifest.json          # Box metadata
-├── file1.txt              # Template files
-├── subdirectory/
-│   └── file2.js
-└── .unboxignore           # Optional: files to ignore
-```
-
-### manifest.json
-```json
-{
-  "name": "n8n",
-  "description": "Standard files for n8n backend projects",
-  "author": "Your Name",
-  "version": "1.0.0",
-  "defaultTarget": "./n8n-setup",
-  "tags": ["backend", "n8n", "automation"]
-}
-```
-
 ## Global Options
 
 - `-v, --verbose` - Enable verbose output
 - `-r, --registry <registry>` - Override default registry
 - `--help` - Show help information
 - `--version` - Show version number
-
-## Environment Variables
-
-- `UNBOX_VERBOSE` - Enable verbose logging
-- `GITHUB_TOKEN` - Default GitHub token for authentication
 
 ## Troubleshooting
 

@@ -1,5 +1,5 @@
 {
-  "name": "dasheck0-unbox",
+  "name": "unbox",
   "version": "1.0.0",
   "description": "A powerful CLI tool to unbox pre-configured template files from GitHub repositories into your projects",
   "main": "dist/cli.js",
