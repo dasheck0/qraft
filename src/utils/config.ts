@@ -19,7 +19,7 @@ export class ConfigManager {
    * @returns string Path to the default config file
    */
   private getDefaultConfigPath(): string {
-    return path.join(os.homedir(), '.qraftc');
+    return path.join(os.homedir(), '.qraftrc');
   }
 
   /**
@@ -84,7 +84,7 @@ export class ConfigManager {
       registries: {
         'dasheck0': {
           name: 'dasheck0',
-          repository: 'dasheck0/qrafttemplates',
+          repository: 'dasheck0/qraft-templates',
           isDefault: true
         }
       },

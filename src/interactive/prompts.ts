@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import { BoxInfo } from '../types';
 
 /**
- * Interactive prompt utilities for the qraftCLI
+ * Interactive prompt utilities for the qraft CLI
  */
 export class InteractivePrompts {
   

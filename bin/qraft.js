@@ -12,12 +12,14 @@ const srcPath = path.join(__dirname, '..', 'src', 'cli.ts');
 
 if (fs.existsSync(distPath)) {
   // Running from built version
-  require(distPath);
+  const { main } = require(distPath);
+  main();
 } else if (fs.existsSync(srcPath)) {
   // Running from source - use ts-node if available
   try {
     require('ts-node/register');
-    require(srcPath);
+    const { main } = require(srcPath);
+    main();
   } catch (error) {
     console.error('Error: TypeScript source found but ts-node is not available.');
     console.error('Please run "npm run build" first or install ts-node.');

@@ -1,5 +1,5 @@
 /**
- * TypeScript type definitions for the qraftCLI tool
+ * TypeScript type definitions for the qraft CLI tool
  */
 
 /**
