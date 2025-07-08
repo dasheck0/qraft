@@ -38,7 +38,7 @@
     "workflow",
     "npx"
   ],
-  "author": "Stefan Neidig <s.neidig@nanogiants.de> (https://nanogiants.de/)",
+  "author": "Stefan Neidig <stefan@rpdev.net> (https://rpdev.net/)",
   "license": "MIT",
   "homepage": "https://github.com/dasheck0/qraft#readme",
   "repository": {
