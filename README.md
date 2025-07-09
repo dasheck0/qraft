@@ -11,6 +11,13 @@ A powerful CLI tool to qraft structured project setups from GitHub template repo
 
 ## Why qraft?
 
+We often use the same files and templates for our projects. This ranges from simple markdown files, to configuration files 
+or specifc code. Often so small that you don't want to build a generator for it. But still want to have a consistent 
+structure and not have to copy and paste files around. Here comes qraft to the rescue. qraft is a tool to pull files and
+directories from repositories into your project. It's like a poor man's generator. See more later in the documentation 
+on how to register your own repositories as template sources and how to pull files from it. Here is an example repository
+that contains real world templates, we use for our projects: https://github.com/dasheck0/qraft-templates.
+
 We chose the name **qraft** as a purposeful twist on “craft.” It reflects the tool’s purpose: to help developers _craft_ structured project setups quickly and consistently using modular templates. The “q” adds uniqueness and avoids naming collisions, while still being short, intuitive, and natural to type in a CLI context:
 
 ```bash
