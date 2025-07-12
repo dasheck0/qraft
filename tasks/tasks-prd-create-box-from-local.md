@@ -49,13 +49,13 @@
   - [x] 3.5 Implement conflict resolution workflow (overwrite, version bump, cancel)
   - [x] 3.6 Add clear summary display of what will change
 
-- [ ] 4.0 Build Repository Management and Permission Handling
-  - [ ] 4.1 Implement write permission checking for target repositories
-  - [ ] 4.2 Create automatic repository forking for users without write access
-  - [ ] 4.3 Build pull request creation with auto-generated descriptions
-  - [ ] 4.4 Implement branch management for box updates
-  - [ ] 4.5 Add commit message generation with meaningful descriptions
-  - [ ] 4.6 Create PR URL provision and next steps guidance
+- [x] 4.0 Build Repository Management and Permission Handling
+  - [x] 4.1 Implement write permission checking for target repositories
+  - [x] 4.2 Create automatic repository forking for users without write access
+  - [x] 4.3 Build pull request creation with auto-generated descriptions
+  - [x] 4.4 Implement branch management for box updates
+  - [x] 4.5 Add commit message generation with meaningful descriptions
+  - [x] 4.6 Create PR URL provision and next steps guidance
 
 - [ ] 5.0 Create Interactive User Experience and Integration
   - [ ] 5.1 Build interactive prompting system for metadata input
