@@ -53,39 +53,7 @@ async function showDryRunPreview(preview: DryRunPreview): Promise<boolean> {
   return answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes';
 }
 
-function estimateFileCount(localPath: string): number {
-  const fs = require('fs');
-  const path = require('path');
 
-  try {
-    let fileCount = 0;
-
-    function countFiles(dir: string): void {
-      const items = fs.readdirSync(dir);
-
-      for (const item of items) {
-        const fullPath = path.join(dir, item);
-        const stats = fs.statSync(fullPath);
-
-        if (stats.isDirectory()) {
-          // Skip common directories that would be excluded
-          if (!['node_modules', '.git', '.DS_Store', 'dist', 'build'].includes(item)) {
-            countFiles(fullPath);
-          }
-        } else if (!item.startsWith('.') || item === '.gitignore') {
-          // Skip common files that would be excluded, but include .gitignore
-          fileCount++;
-        }
-      }
-    }
-
-    const resolvedPath = path.resolve(localPath);
-    countFiles(resolvedPath);
-    return fileCount;
-  } catch {
-    return 0; // Return 0 if we can't count files
-  }
-}
 
 interface ValidationResult {
   isValid: boolean;
@@ -320,14 +288,81 @@ export async function createCommand(
 
     console.log(chalk.green('✅ Registry access is valid'));
 
-    // Step 3: Prepare dry-run preview
-    console.log(chalk.cyan('\n🔍 Preparing preview...'));
+    // Step 3: Scan directory and analyze structure
+    console.log(chalk.cyan('\n🔍 Analyzing directory structure...'));
 
-    // Determine effective registry and box name for preview
-    let effectiveRegistry: string;
-    let effectiveBoxName: string;
+    const { DirectoryScanner } = require('../core/directoryScanner');
+    const { TagDetector } = require('../core/tagDetector');
+    const { StructureAnalyzer } = require('../core/structureAnalyzer');
+
+    const scanner = new DirectoryScanner();
+    const tagDetector = new TagDetector();
+    const structureAnalyzer = new StructureAnalyzer();
 
     try {
+      // Scan directory structure
+      const structure = await scanner.scanDirectory(localPath, {
+        includeContent: true,
+        maxContentSize: 10 * 1024, // 10KB max for content analysis
+        maxDepth: 5,
+        includeHidden: false
+      });
+
+      console.log(chalk.gray(`📊 Found: ${scanner.getDirectorySummary(structure)}`));
+
+      // Detect package.json for dependency analysis
+      let packageJson;
+      const packageFile = structure.files.find((f: any) => f.name === 'package.json');
+      if (packageFile?.content) {
+        try {
+          packageJson = JSON.parse(packageFile.content);
+        } catch {
+          console.log(chalk.yellow('⚠️  Found package.json but could not parse it'));
+        }
+      }
+
+      // Detect tags
+      console.log(chalk.cyan('🏷️  Detecting project tags...'));
+      const tags = await tagDetector.detectTags(structure, packageJson);
+
+      if (tags.allTags.length > 0) {
+        console.log(chalk.green('✨ Detected tags:'));
+        console.log(chalk.gray(`   File Types: ${tags.fileTypeTags.join(', ') || 'none'}`));
+        console.log(chalk.gray(`   Frameworks: ${tags.frameworkTags.join(', ') || 'none'}`));
+        console.log(chalk.gray(`   Semantic: ${tags.semanticTags.join(', ') || 'none'}`));
+        console.log(chalk.gray(`   Tooling: ${tags.toolingTags.join(', ') || 'none'}`));
+      } else {
+        console.log(chalk.yellow('⚠️  No specific tags detected - will use general classification'));
+      }
+
+      // Analyze structure for target suggestions
+      console.log(chalk.cyan('🎯 Analyzing structure for target suggestions...'));
+      const analysis = structureAnalyzer.analyzeStructure(structure, tags);
+
+      console.log(chalk.green(`📋 Project Analysis:`));
+      console.log(chalk.gray(`   Type: ${analysis.projectType}`));
+      console.log(chalk.gray(`   Language: ${analysis.primaryLanguage}`));
+      if (analysis.framework) {
+        console.log(chalk.gray(`   Framework: ${analysis.framework}`));
+      }
+      console.log(chalk.gray(`   Complexity: ${analysis.complexity}`));
+      console.log(chalk.gray(`   Has Tests: ${analysis.hasTests ? 'Yes' : 'No'}`));
+      console.log(chalk.gray(`   Has Docs: ${analysis.hasDocumentation ? 'Yes' : 'No'}`));
+
+      if (analysis.targetSuggestions.length > 0) {
+        console.log(chalk.green('🎯 Target Suggestions:'));
+        for (const suggestion of analysis.targetSuggestions.slice(0, 3)) {
+          console.log(chalk.gray(`   ${suggestion.path} (${(suggestion.confidence * 100).toFixed(0)}% confidence) - ${suggestion.reason}`));
+        }
+      }
+
+      // Step 4: Prepare dry-run preview with smart suggestions
+      console.log(chalk.cyan('\n🔍 Preparing preview...'));
+
+      // Determine effective registry and box name for preview
+      let effectiveRegistry: string;
+      let effectiveBoxName: string;
+
       effectiveRegistry = options.registry || await getEffectiveRegistry(boxManager);
       effectiveBoxName = boxName || deriveBoxNameFromPath(localPath);
 
@@ -339,9 +374,7 @@ export async function createCommand(
         );
       }
 
-      const estimatedFiles = estimateFileCount(localPath);
-
-      if (estimatedFiles === 0) {
+      if (structure.totalFiles === 0) {
         throw createError(
           'No files found to include in the box',
           'NO_FILES_FOUND',
@@ -349,21 +382,42 @@ export async function createCommand(
         );
       }
 
+      // Enhanced preview with smart suggestions
+      const bestTarget = structureAnalyzer.getBestTargetSuggestion(analysis);
+      const suggestedBoxName = `${effectiveBoxName}-${analysis.primaryLanguage.toLowerCase()}`;
+
       const preview: DryRunPreview = {
         localPath,
         boxName: effectiveBoxName,
         registry: effectiveRegistry,
-        estimatedFiles,
+        estimatedFiles: structure.totalFiles,
         targetLocation: `${effectiveRegistry}/${effectiveBoxName}`
       };
 
-      // Step 4: Show dry-run preview and get confirmation
+      // Add smart suggestions to preview
+      console.log(chalk.cyan('\n💡 Smart Suggestions:'));
+      console.log(chalk.gray(`   Suggested Target: ${bestTarget}`));
+      console.log(chalk.gray(`   Alternative Name: ${suggestedBoxName}`));
+      if (analysis.targetSuggestions.length > 0) {
+        console.log(chalk.gray(`   Best Match: ${analysis.targetSuggestions[0].path} (${analysis.targetSuggestions[0].reason})`));
+      }
+
+      // Step 5: Show dry-run preview and get confirmation
       const shouldProceed = await showDryRunPreview(preview);
 
       if (!shouldProceed) {
         console.log(chalk.yellow('\n⏹️  Operation cancelled by user'));
         return;
       }
+
+      // Store analysis results for next phases
+      console.log(chalk.green('\n✅ Analysis complete - ready for box creation'));
+      console.log(chalk.cyan('📋 Summary:'));
+      console.log(chalk.gray(`   📁 Files: ${structure.totalFiles} files, ${structure.totalDirectories} directories`));
+      console.log(chalk.gray(`   🏷️  Tags: ${tags.allTags.slice(0, 5).join(', ')}${tags.allTags.length > 5 ? '...' : ''}`));
+      console.log(chalk.gray(`   🎯 Target: ${bestTarget}`));
+      console.log(chalk.gray(`   📦 Box: ${effectiveBoxName} → ${effectiveRegistry}`));
+
     } catch (error) {
       if (error instanceof Error && (error as CreateError).code) {
         // Re-throw our custom errors
@@ -371,9 +425,9 @@ export async function createCommand(
       }
 
       throw createError(
-        `Failed to prepare preview: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'PREVIEW_PREPARATION_FAILED',
-        'Check the directory contents and try again'
+        `Failed to analyze directory: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'DIRECTORY_ANALYSIS_FAILED',
+        'Check the directory contents and permissions, then try again'
       );
     }
 
@@ -382,8 +436,18 @@ export async function createCommand(
     // Interactive mode is default - minimal options approach
     console.log(chalk.cyan('\n🎯 Interactive Mode: '), 'Enabled by default');
     console.log(chalk.yellow('Local Path:'), localPath);
-    console.log(chalk.yellow('Box Name:'), effectiveBoxName);
-    console.log(chalk.yellow('Registry:'), effectiveRegistry);
+
+    if (boxName) {
+      console.log(chalk.yellow('Box Name:'), boxName);
+    } else {
+      console.log(chalk.gray('Box Name:'), 'Derived from analysis');
+    }
+
+    if (options.registry) {
+      console.log(chalk.yellow('Registry:'), options.registry);
+    } else {
+      console.log(chalk.gray('Registry:'), 'Using default configuration');
+    }
 
     console.log(chalk.cyan('\n📋 Interactive Process:'));
     console.log(chalk.gray('  1. ✅ Validate local directory'));
