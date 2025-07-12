@@ -14,11 +14,8 @@ export interface BoxMetadata {
   name: string;
   description?: string;
   tags: string[];
-  framework?: string;
-  language: string;
   fileCount: number;
   size: string;
-  features?: string[];
 }
 
 export interface PullRequestResult {
@@ -130,53 +127,29 @@ export class PullRequestCreator {
   }
 
   private generateTitle(boxMetadata: BoxMetadata): string {
-    const { name, framework, language } = boxMetadata;
-    
-    if (framework && framework !== 'none') {
-      return `Add ${name} box (${framework} ${language})`;
-    }
-    
-    return `Add ${name} box (${language})`;
+    const { name } = boxMetadata;
+    return `Add ${name} box`;
   }
 
   private generateDescription(boxMetadata: BoxMetadata): string {
-    const { name, description, tags, framework, language, fileCount, size, features } = boxMetadata;
-    
+    const { name, description, tags, fileCount, size } = boxMetadata;
+
     let desc = `## 📦 New Box: ${name}\n\n`;
-    
+
     if (description) {
       desc += `${description}\n\n`;
     }
-    
+
     desc += `### 📊 Box Details\n\n`;
-    desc += `- **Language**: ${language}\n`;
-    
-    if (framework && framework !== 'none') {
-      desc += `- **Framework**: ${framework}\n`;
-    }
-    
     desc += `- **Files**: ${fileCount} files\n`;
     desc += `- **Size**: ${size}\n`;
-    
+
     if (tags.length > 0) {
       desc += `- **Tags**: ${tags.join(', ')}\n`;
     }
     
-    if (features && features.length > 0) {
-      desc += `\n### ✨ Features\n\n`;
-      features.forEach(feature => {
-        desc += `- ${feature}\n`;
-      });
-    }
-    
     desc += `\n### 🎯 Purpose\n\n`;
-    desc += `This box provides a ${language}`;
-    
-    if (framework && framework !== 'none') {
-      desc += ` ${framework}`;
-    }
-    
-    desc += ` template that can be used to quickly bootstrap new projects.\n\n`;
+    desc += `This box provides a template that can be used to quickly bootstrap new projects.\n\n`;
     
     desc += `### 🔍 What's Included\n\n`;
     desc += `- Complete project structure\n`;

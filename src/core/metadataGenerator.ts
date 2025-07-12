@@ -8,8 +8,6 @@ export interface BoxMetadata {
   version: string;
   tags: string[];
   category: string;
-  language: string;
-  framework?: string | undefined;
   author?: string | undefined;
   license?: string | undefined;
   repository?: string | undefined;
@@ -31,11 +29,6 @@ export interface BoxMetadata {
     hasCICD: boolean;
     hasDocker: boolean;
     complexity: string;
-  };
-  usage: {
-    installation?: string[] | undefined;
-    quickStart?: string[] | undefined;
-    examples?: string[] | undefined;
   };
   generatedAt: string;
   generatedBy: string;
@@ -71,8 +64,6 @@ export class MetadataGenerator {
       version: overrides.version || this.deriveVersion(packageJson),
       tags: overrides.tags || this.generateTags(tags, analysis),
       category: overrides.category || this.deriveCategory(analysis, tags),
-      language: analysis.primaryLanguage,
-      framework: analysis.framework,
       author: overrides.author || this.deriveAuthor(packageJson),
       license: overrides.license || this.deriveLicense(packageJson, structure),
       repository: overrides.repository || this.deriveRepository(packageJson),
@@ -81,7 +72,6 @@ export class MetadataGenerator {
       requirements: this.generateRequirements(packageJson, structure, tags),
       files: this.generateFileStats(structure),
       structure: this.generateStructureInfo(analysis, tags),
-      usage: this.generateUsageInstructions(analysis, tags, packageJson),
       generatedAt: new Date().toISOString(),
       generatedBy: 'qraft-cli'
     };
@@ -300,54 +290,7 @@ export class MetadataGenerator {
     };
   }
 
-  private generateUsageInstructions(
-    _analysis: StructureAnalysis,
-    tags: TagDetectionResult,
-    packageJson: any
-  ): BoxMetadata['usage'] {
-    const usage: BoxMetadata['usage'] = {};
-    
-    // Installation instructions
-    if (packageJson?.dependencies || tags.fileTypeTags.includes('javascript') || tags.fileTypeTags.includes('typescript')) {
-      usage.installation = [
-        'npm install',
-        '# or',
-        'yarn install'
-      ];
-    } else if (tags.fileTypeTags.includes('python')) {
-      usage.installation = [
-        'pip install -r requirements.txt',
-        '# or',
-        'poetry install'
-      ];
-    }
-    
-    // Quick start instructions
-    if (packageJson?.scripts?.start) {
-      usage.quickStart = ['npm start'];
-    } else if (packageJson?.scripts?.dev) {
-      usage.quickStart = ['npm run dev'];
-    } else if (tags.frameworkTags.includes('nextjs')) {
-      usage.quickStart = ['npm run dev'];
-    } else if (tags.fileTypeTags.includes('python')) {
-      usage.quickStart = ['python main.py'];
-    }
-    
-    // Examples based on project type
-    if (tags.semanticTags.includes('api')) {
-      usage.examples = [
-        'curl http://localhost:3000/api/health',
-        '# Check API documentation for available endpoints'
-      ];
-    } else if (tags.frameworkTags.includes('react')) {
-      usage.examples = [
-        'npm run build  # Build for production',
-        'npm test       # Run tests'
-      ];
-    }
-    
-    return usage;
-  }
+
 
   // Generate metadata template for user customization
   generateTemplate(baseMetadata: BoxMetadata): string {

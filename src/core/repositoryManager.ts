@@ -209,10 +209,8 @@ export class RepositoryManager {
           name: manifest.name,
           description: manifest.description,
           tags: manifest.tags || [],
-          language: manifest.language || 'unknown',
           fileCount: filesToUpload.length - 1, // Exclude manifest.json
-          size: this.calculateTotalSize(filesToUpload),
-          features: manifest.features || []
+          size: this.calculateTotalSize(filesToUpload)
         };
 
         const prOptions: any = {

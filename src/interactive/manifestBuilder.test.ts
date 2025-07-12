@@ -1,9 +1,9 @@
-import { ManifestBuilder } from './manifestBuilder';
+import inquirer from 'inquirer';
 import { BoxMetadata } from '../core/metadataGenerator';
+import { ManifestBuilder } from './manifestBuilder';
 
 // Mock inquirer
 jest.mock('inquirer');
-import inquirer from 'inquirer';
 const mockInquirer = inquirer as jest.Mocked<typeof inquirer>;
 
 describe('ManifestBuilder', () => {
@@ -19,11 +19,27 @@ describe('ManifestBuilder', () => {
       description: 'A test box for testing',
       author: 'Test Author',
       version: '1.0.0',
-      language: 'javascript',
-      framework: 'react',
       tags: ['test', 'example'],
       keywords: ['testing', 'demo'],
-      category: 'development'
+      category: 'development',
+      requirements: {
+        node: '>=14.0.0',
+        dependencies: ['react', 'typescript']
+      },
+      files: {
+        total: 10,
+        size: '1.2MB',
+        types: { '.ts': 5, '.js': 3, '.json': 2 }
+      },
+      structure: {
+        hasTests: true,
+        hasDocumentation: true,
+        hasCICD: false,
+        hasDocker: false,
+        complexity: 'medium'
+      },
+      generatedAt: '2023-01-01T00:00:00.000Z',
+      generatedBy: 'qraft-cli'
     };
   });
 
@@ -44,10 +60,7 @@ describe('ManifestBuilder', () => {
         author: 'Test Author',
         version: '1.0.0',
         defaultTarget: './target',
-        language: 'javascript',
-        framework: 'react',
-        tags: ['test', 'example'],
-        features: ['testing', 'demo']
+        tags: ['test', 'example']
       });
     });
 
@@ -64,8 +77,8 @@ describe('ManifestBuilder', () => {
       await manifestBuilder.buildQuickManifest(mockMetadata);
 
       // Check that the validation function was called
-      const promptCall = promptSpy.mock.calls[0][0] as any[];
-      const namePrompt = promptCall.find(p => p.name === 'name');
+      const promptCall = promptSpy.mock.calls[0][0] as any;
+      const namePrompt = Array.isArray(promptCall) ? promptCall.find(p => p.name === 'name') : promptCall;
       
       expect(namePrompt.validate('valid-box-name')).toBe(true);
       expect(namePrompt.validate('Invalid Box Name')).toContain('lowercase');
@@ -113,14 +126,8 @@ describe('ManifestBuilder', () => {
           version: '1.0.0'
         })
         .mockResolvedValueOnce({
-          language: 'javascript',
-          framework: 'react',
-          tags: ['test']
-        })
-        .mockResolvedValueOnce({
-          features: ['testing'],
-          defaultTarget: './target',
-          usageSimple: 'Usage instructions'
+          tags: ['test'],
+          defaultTarget: './target'
         })
         .mockResolvedValueOnce({
           addExclusions: false,
@@ -134,7 +141,7 @@ describe('ManifestBuilder', () => {
 
       expect(result.name).toBe('test-box');
       expect(result.description).toBe('Test description');
-      expect(mockInquirer.prompt).toHaveBeenCalledTimes(6); // Quick + 5 full interactive steps
+      expect(mockInquirer.prompt).toHaveBeenCalledTimes(5); // Quick + 4 full interactive steps
     });
   });
 
@@ -148,17 +155,10 @@ describe('ManifestBuilder', () => {
           author: 'Interactive Author',
           version: '2.0.0'
         })
-        // Categorization
+        // Tags and Configuration
         .mockResolvedValueOnce({
-          language: 'typescript',
-          framework: 'vue',
-          tags: ['interactive', 'test']
-        })
-        // Features and usage
-        .mockResolvedValueOnce({
-          features: ['interactive', 'testing'],
-          defaultTarget: './dist',
-          usageSimple: 'Custom usage instructions'
+          tags: ['interactive', 'test'],
+          defaultTarget: './dist'
         })
         // Advanced options
         .mockResolvedValueOnce({
@@ -180,11 +180,7 @@ describe('ManifestBuilder', () => {
         author: 'Interactive Author',
         version: '2.0.0',
         defaultTarget: './dist',
-        language: 'typescript',
-        framework: 'vue',
         tags: ['interactive', 'test'],
-        features: ['interactive', 'testing'],
-        usage: 'Custom usage instructions',
         exclude: ['*.log', '.env'],
         postInstall: ['npm install', 'npm run build']
       });
@@ -200,12 +196,7 @@ describe('ManifestBuilder', () => {
           version: '1.0.0'
         })
         .mockResolvedValueOnce({
-          language: 'javascript',
-          framework: '',
-          tags: []
-        })
-        .mockResolvedValueOnce({
-          features: [],
+          tags: [],
           defaultTarget: './target'
         })
         .mockResolvedValueOnce({
@@ -223,12 +214,7 @@ describe('ManifestBuilder', () => {
           version: '1.0.0'
         })
         .mockResolvedValueOnce({
-          language: 'javascript',
-          framework: '',
-          tags: []
-        })
-        .mockResolvedValueOnce({
-          features: [],
+          tags: [],
           defaultTarget: './target'
         })
         .mockResolvedValueOnce({
@@ -242,7 +228,7 @@ describe('ManifestBuilder', () => {
       const result = await manifestBuilder.buildManifest(mockMetadata);
 
       expect(result.name).toBe('second-attempt');
-      expect(mockInquirer.prompt).toHaveBeenCalledTimes(10); // 5 calls for each attempt
+      expect(mockInquirer.prompt).toHaveBeenCalledTimes(8); // 4 calls for each attempt
     });
 
     it('should handle empty optional fields correctly', async () => {
@@ -254,12 +240,7 @@ describe('ManifestBuilder', () => {
           version: '1.0.0'
         })
         .mockResolvedValueOnce({
-          language: '',
-          framework: '',
-          tags: []
-        })
-        .mockResolvedValueOnce({
-          features: [],
+          tags: [],
           defaultTarget: './target'
         })
         .mockResolvedValueOnce({
@@ -278,11 +259,7 @@ describe('ManifestBuilder', () => {
         author: 'Author',
         version: '1.0.0',
         defaultTarget: './target',
-        language: undefined,
-        framework: undefined,
         tags: undefined,
-        features: undefined,
-        usage: undefined,
         exclude: undefined,
         postInstall: undefined
       });

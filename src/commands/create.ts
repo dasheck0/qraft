@@ -143,9 +143,6 @@ export async function createCommand(
       suggestedDescription: generatedMetadata.description,
       suggestedAuthor: generatedMetadata.author || undefined,
       suggestedTags: generatedMetadata.tags || undefined,
-      suggestedLanguage: generatedMetadata.language || undefined,
-      suggestedFramework: generatedMetadata.framework || undefined,
-      suggestedFeatures: generatedMetadata.keywords || undefined,
       defaultTarget: './target'
     };
 

@@ -8,9 +8,6 @@ export interface ManifestBuilderOptions {
   suggestedDescription?: string;
   suggestedAuthor?: string | undefined;
   suggestedTags?: string[] | undefined;
-  suggestedLanguage?: string | undefined;
-  suggestedFramework?: string | undefined;
-  suggestedFeatures?: string[] | undefined;
   defaultTarget?: string;
 }
 
@@ -67,65 +64,26 @@ export class ManifestBuilder {
       }
     ]);
 
-    // Step 2: Categorization
-    console.log(chalk.yellow('\n🏷️  Categorization'));
-    
-    const categorizationAnswers = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'language',
-        message: 'Primary programming language:',
-        default: options.suggestedLanguage || generatedMetadata.language || '',
-      },
-      {
-        type: 'input',
-        name: 'framework',
-        message: 'Framework or technology stack:',
-        default: options.suggestedFramework || generatedMetadata.framework || '',
-      },
+    // Step 2: Tags and Configuration
+    console.log(chalk.yellow('\n🏷️  Tags and Configuration'));
+
+    const configAnswers = await inquirer.prompt([
       {
         type: 'input',
         name: 'tags',
         message: 'Tags (comma-separated):',
         default: (options.suggestedTags || generatedMetadata.tags || []).join(', '),
         filter: (input: string) => input.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-      }
-    ]);
-
-    // Step 3: Features and Usage
-    console.log(chalk.yellow('\n✨ Features and Usage'));
-    
-    const featuresAnswers = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'features',
-        message: 'Key features (comma-separated):',
-        default: (options.suggestedFeatures || generatedMetadata.keywords || []).join(', '),
-        filter: (input: string) => input.split(',').map(feature => feature.trim()).filter(feature => feature.length > 0)
       },
       {
         type: 'input',
         name: 'defaultTarget',
         message: 'Default target directory:',
         default: options.defaultTarget || './target',
-      },
-      {
-        type: 'editor',
-        name: 'usage',
-        message: 'Usage instructions (opens editor):',
-        default: this.generateDefaultUsage(basicAnswers.name),
-        when: () => this.hasEditor()
-      },
-      {
-        type: 'input',
-        name: 'usageSimple',
-        message: 'Usage instructions (one line):',
-        default: `Run 'qraft copy ${basicAnswers.name}' to use this box`,
-        when: () => !this.hasEditor()
       }
     ]);
 
-    // Step 4: Advanced Options
+    // Step 3: Advanced Options
     console.log(chalk.yellow('\n⚙️  Advanced Options'));
     
     const advancedAnswers = await inquirer.prompt([
@@ -165,12 +123,8 @@ export class ManifestBuilder {
       description: basicAnswers.description,
       author: basicAnswers.author,
       version: basicAnswers.version,
-      defaultTarget: featuresAnswers.defaultTarget || './target',
-      language: categorizationAnswers.language || undefined,
-      framework: categorizationAnswers.framework || undefined,
-      tags: categorizationAnswers.tags.length > 0 ? categorizationAnswers.tags : undefined,
-      features: featuresAnswers.features.length > 0 ? featuresAnswers.features : undefined,
-      usage: featuresAnswers.usage || featuresAnswers.usageSimple || undefined,
+      defaultTarget: configAnswers.defaultTarget || './target',
+      tags: configAnswers.tags.length > 0 ? configAnswers.tags : undefined,
       exclude: advancedAnswers.exclude || undefined,
       postInstall: advancedAnswers.postInstall || undefined
     };
@@ -243,17 +197,8 @@ export class ManifestBuilder {
       };
 
       // Add optional properties only if they have values
-      const language = options.suggestedLanguage || generatedMetadata.language;
-      if (language) manifest.language = language;
-
-      const framework = options.suggestedFramework || generatedMetadata.framework;
-      if (framework) manifest.framework = framework;
-
       const tags = options.suggestedTags || generatedMetadata.tags;
       if (tags && tags.length > 0) manifest.tags = tags;
-
-      const features = options.suggestedFeatures || generatedMetadata.keywords;
-      if (features && features.length > 0) manifest.features = features;
 
       return manifest;
     }
@@ -262,30 +207,7 @@ export class ManifestBuilder {
     return this.buildManifest(generatedMetadata, options);
   }
 
-  /**
-   * Generate default usage instructions
-   */
-  private generateDefaultUsage(boxName: string): string {
-    return `# Usage
 
-To use this box:
 
-1. Copy the box to your project:
-   \`\`\`bash
-   qraft copy ${boxName}
-   \`\`\`
 
-2. Follow any post-installation steps if provided
-
-3. Customize the files to fit your needs
-
-For more information, see the documentation.`;
-  }
-
-  /**
-   * Check if editor is available
-   */
-  private hasEditor(): boolean {
-    return !!(process.env.EDITOR || process.env.VISUAL);
-  }
 }

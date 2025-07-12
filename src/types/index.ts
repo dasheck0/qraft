@@ -25,18 +25,6 @@ export interface BoxManifest {
   /** Optional tags for categorization */
   tags?: string[];
 
-  /** Primary programming language */
-  language?: string;
-
-  /** Optional framework or technology stack */
-  framework?: string;
-
-  /** Optional features or capabilities */
-  features?: string[];
-
-  /** Optional usage notes or instructions */
-  usage?: string;
-
   /** Files to exclude when copying (relative to box directory) */
   exclude?: string[];
 
