@@ -1,10 +1,10 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import {
-  BoxInfo,
-  BoxOperationConfig,
-  BoxOperationResult,
-  BoxReference
+    BoxInfo,
+    BoxOperationConfig,
+    BoxOperationResult,
+    BoxReference
 } from '../types';
 import { ConfigManager } from '../utils/config';
 import { CacheManager } from './cacheManager';
@@ -431,6 +431,23 @@ export class BoxManager {
     // Clear cached managers to use new token
     this.registryManager = null;
     this.cacheManager = null;
+  }
+
+  /**
+   * Get GitHub token for a registry
+   * @param registryName Name of the registry
+   * @returns Promise<string | undefined> GitHub token
+   */
+  async getGitHubToken(registryName: string): Promise<string | undefined> {
+    const config = await this.configManager.getConfig();
+
+    // First try registry-specific token
+    if (config.registries[registryName]?.token) {
+      return config.registries[registryName].token;
+    }
+
+    // Fall back to global token
+    return config.globalToken;
   }
 
   /**

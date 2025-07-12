@@ -18,6 +18,19 @@ jest.doMock('readline', () => ({
 
 // Note: We don't mock fs here because we need real file operations for test setup
 
+// Mock the RepositoryManager to avoid Octokit import issues
+jest.mock('../core/repositoryManager', () => ({
+  RepositoryManager: jest.fn().mockImplementation(() => ({
+    createBox: jest.fn().mockResolvedValue({
+      success: true,
+      message: 'Box created successfully',
+      boxPath: 'test-box',
+      commitSha: 'abc123',
+      nextSteps: ['Box is now available']
+    })
+  }))
+}));
+
 import { createCommand } from './create';
 
 describe('createCommand', () => {
@@ -27,7 +40,8 @@ describe('createCommand', () => {
       getConfig: jest.fn().mockResolvedValue({
         defaultRegistry: 'default/registry'
       })
-    })
+    }),
+    getGitHubToken: jest.fn().mockResolvedValue('mock-token')
   } as any;
 
   const testDir = './test-temp-dir';
