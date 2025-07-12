@@ -36,10 +36,10 @@
   - [x] 2.1 Create local directory scanner that validates and reads directory contents
   - [x] 2.2 Implement comprehensive tag detection: file types (TypeScript, JavaScript, Python, Docker) and semantic tags (ai, architecture, documentation, config, workflow, etc.)
   - [x] 2.3 Build directory structure analysis for defaultTarget suggestions
-  - [ ] 2.4 Create exclusion pattern detection (node_modules, .git, build artifacts)
-  - [ ] 2.5 Implement sensitive file detection (.env, keys, tokens, credentials)
-  - [ ] 2.6 Build metadata generator with smart defaults and override capabilities
-  - [ ] 2.7 Create box name derivation logic with nested structure support (scripts/aws/lambda)
+  - [x] 2.4 Create exclusion pattern detection (node_modules, .git, build artifacts)
+  - [x] 2.5 Implement sensitive file detection (.env, keys, tokens, credentials)
+  - [x] 2.6 Build metadata generator with smart defaults and override capabilities
+  - [x] 2.7 Create box name derivation logic with nested structure support (scripts/aws/lambda)
 
 - [ ] 3.0 Implement Conflict Resolution and Diff Visualization
   - [ ] 3.1 Create content comparison engine for existing vs new box content

@@ -238,18 +238,7 @@ async function getEffectiveRegistry(boxManager: BoxManager): Promise<string> {
   }
 }
 
-function deriveBoxNameFromPath(localPath: string): string {
-  const path = require('path');
-  const baseName = path.basename(path.resolve(localPath));
 
-  // Clean up the name to be a valid box name
-  return baseName
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-/, '')
-    .replace(/-$/, '');
-}
 
 export async function createCommand(
   boxManager: BoxManager,
@@ -294,10 +283,16 @@ export async function createCommand(
     const { DirectoryScanner } = require('../core/directoryScanner');
     const { TagDetector } = require('../core/tagDetector');
     const { StructureAnalyzer } = require('../core/structureAnalyzer');
+    const { SensitiveFileDetector } = require('../core/sensitiveFileDetector');
+    const { MetadataGenerator } = require('../core/metadataGenerator');
+    const { BoxNameDerivation } = require('../core/boxNameDerivation');
 
     const scanner = new DirectoryScanner();
     const tagDetector = new TagDetector();
     const structureAnalyzer = new StructureAnalyzer();
+    const sensitiveDetector = new SensitiveFileDetector();
+    const metadataGenerator = new MetadataGenerator();
+    const boxNameDerivation = new BoxNameDerivation();
 
     try {
       // Scan directory structure
@@ -305,7 +300,7 @@ export async function createCommand(
         includeContent: true,
         maxContentSize: 10 * 1024, // 10KB max for content analysis
         maxDepth: 5,
-        includeHidden: false
+        includeHidden: true // Include hidden files for sensitive file detection
       });
 
       console.log(chalk.gray(`📊 Found: ${scanner.getDirectorySummary(structure)}`));
@@ -356,15 +351,91 @@ export async function createCommand(
         }
       }
 
+      // Detect sensitive files
+      console.log(chalk.cyan('🔒 Scanning for sensitive files...'));
+      const sensitiveResult = sensitiveDetector.detectSensitiveFiles(structure.files);
+
+      if (sensitiveResult.totalSensitiveFiles > 0) {
+        console.log(chalk.red(`⚠️  Found ${sensitiveResult.totalSensitiveFiles} potentially sensitive files:`));
+
+        // Show critical and high severity files
+        const criticalFiles = sensitiveResult.sensitiveFiles.filter((f: any) => f.severity === 'critical');
+        const highFiles = sensitiveResult.sensitiveFiles.filter((f: any) => f.severity === 'high');
+
+        if (criticalFiles.length > 0) {
+          console.log(chalk.red('🚨 CRITICAL:'));
+          for (const file of criticalFiles.slice(0, 3)) {
+            console.log(chalk.red(`   ${file.file.relativePath} - ${file.reasons[0]}`));
+          }
+        }
+
+        if (highFiles.length > 0) {
+          console.log(chalk.yellow('⚠️  HIGH:'));
+          for (const file of highFiles.slice(0, 3)) {
+            console.log(chalk.yellow(`   ${file.file.relativePath} - ${file.reasons[0]}`));
+          }
+        }
+
+        console.log(chalk.cyan('💡 Security Recommendations:'));
+        for (const recommendation of sensitiveResult.recommendations.slice(0, 3)) {
+          console.log(chalk.gray(`   ${recommendation}`));
+        }
+
+        // Block creation if critical files are found
+        if (criticalFiles.length > 0) {
+          throw createError(
+            `Found ${criticalFiles.length} critical sensitive files that must be removed before creating a box`,
+            'CRITICAL_SENSITIVE_FILES_FOUND',
+            'Remove or secure all critical sensitive files (.env, API keys, private keys) before proceeding'
+          );
+        }
+
+        // Warn about high severity files but allow continuation
+        if (highFiles.length > 0) {
+          console.log(chalk.yellow('\n⚠️  WARNING: High-risk sensitive files detected. Consider reviewing before proceeding.'));
+        }
+      } else {
+        console.log(chalk.green('✅ No sensitive files detected'));
+      }
+
+      // Determine effective registry and box name for metadata and preview
+      const effectiveRegistry = options.registry || await getEffectiveRegistry(boxManager);
+
+      // Use enhanced box name derivation
+      const boxNameResult = boxNameDerivation.deriveBoxName(localPath, structure, tags, analysis, boxName);
+      const effectiveBoxName = boxNameResult.primaryName;
+
+      console.log(chalk.cyan('📝 Smart box name suggestions:'));
+      console.log(chalk.green(`   🎯 Primary: ${boxNameResult.primaryName} (${(boxNameResult.confidence * 100).toFixed(0)}% confidence)`));
+      if (boxNameResult.alternatives.length > 0) {
+        console.log(chalk.gray('   💡 Alternatives:'));
+        for (const alt of boxNameResult.alternatives.slice(0, 3)) {
+          console.log(chalk.gray(`      • ${alt.name} (${(alt.confidence * 100).toFixed(0)}%) - ${alt.reason}`));
+        }
+      }
+
+      // Generate metadata
+      console.log(chalk.cyan('📋 Generating metadata...'));
+      const metadata = metadataGenerator.generateMetadata(
+        effectiveBoxName,
+        structure,
+        tags,
+        analysis
+      );
+
+      console.log(chalk.green('✨ Generated metadata:'));
+      console.log(chalk.gray(`   📦 Name: ${metadata.name}`));
+      console.log(chalk.gray(`   📝 Description: ${metadata.description.substring(0, 80)}${metadata.description.length > 80 ? '...' : ''}`));
+      console.log(chalk.gray(`   🏷️  Version: ${metadata.version}`));
+      console.log(chalk.gray(`   📂 Category: ${metadata.category}`));
+      console.log(chalk.gray(`   🔤 Language: ${metadata.language}`));
+      if (metadata.framework) {
+        console.log(chalk.gray(`   🚀 Framework: ${metadata.framework}`));
+      }
+      console.log(chalk.gray(`   🏷️  Tags: ${metadata.tags.slice(0, 5).join(', ')}${metadata.tags.length > 5 ? '...' : ''}`));
+
       // Step 4: Prepare dry-run preview with smart suggestions
       console.log(chalk.cyan('\n🔍 Preparing preview...'));
-
-      // Determine effective registry and box name for preview
-      let effectiveRegistry: string;
-      let effectiveBoxName: string;
-
-      effectiveRegistry = options.registry || await getEffectiveRegistry(boxManager);
-      effectiveBoxName = boxName || deriveBoxNameFromPath(localPath);
 
       if (!effectiveBoxName) {
         throw createError(
