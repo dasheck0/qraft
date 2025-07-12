@@ -119,10 +119,19 @@ export class RepositoryManager {
       userAgent: 'qraft-cli'
     });
 
-    const branch = options.branch || 'main';
     const boxPath = boxName;
 
     try {
+      // Get the default branch if no branch specified
+      let branch = options.branch;
+      if (!branch) {
+        const { data: repoData } = await octokit.rest.repos.get({
+          owner,
+          repo
+        });
+        branch = repoData.default_branch;
+      }
+
       // Get the current commit SHA of the branch
       const { data: refData } = await octokit.rest.git.getRef({
         owner,
