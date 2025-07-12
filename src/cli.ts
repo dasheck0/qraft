@@ -71,6 +71,8 @@ program
   .command('create <path> [box-name]')
   .description('Create a template box from a local directory')
   .option('--registry <registry>', 'use specific registry')
+  .option('--no-interactive', 'disable interactive mode (use quick mode)')
+  .option('--dry-run', 'show what would be created without actually creating')
   .action(async (...args) => {
     try {
       const [localPath, boxName, , command] = args;
