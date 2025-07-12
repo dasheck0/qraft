@@ -67,7 +67,6 @@ describe('MetadataGenerator', () => {
       const metadata = generator.generateMetadata('test-box', structure, tags, analysis);
 
       expect(metadata.name).toBe('test-box');
-      expect(metadata.language).toBe('TypeScript');
       expect(metadata.tags).toContain('typescript');
       expect(metadata.category).toBe('general');
       expect(metadata.structure.complexity).toBe('simple');
@@ -166,10 +165,7 @@ This is a comprehensive description of my project that does amazing things.
       const metadata = generator.generateMetadata('react-app', structure, tags, analysis);
 
       expect(metadata.category).toBe('frontend');
-      expect(metadata.framework).toBe('react');
       expect(metadata.description).toContain('React application');
-      expect(metadata.usage.installation).toContain('npm install');
-      expect(metadata.usage.quickStart).toContain('npm start');
       expect(metadata.requirements.dependencies).toContain('react');
     });
 
@@ -190,9 +186,7 @@ This is a comprehensive description of my project that does amazing things.
       const metadata = generator.generateMetadata('nextjs-app', structure, tags, analysis);
 
       expect(metadata.category).toBe('fullstack');
-      expect(metadata.framework).toBe('nextjs');
       expect(metadata.description).toContain('Next.js application');
-      expect(metadata.usage.quickStart).toContain('npm run dev');
       expect(metadata.keywords).toContain('ssr');
     });
 
@@ -216,7 +210,6 @@ This is a comprehensive description of my project that does amazing things.
 
       expect(metadata.category).toBe('backend');
       expect(metadata.description).toContain('REST API');
-      expect(metadata.usage.examples).toContain('curl http://localhost:3000/api/health');
     });
 
     it('should handle overrides correctly', () => {

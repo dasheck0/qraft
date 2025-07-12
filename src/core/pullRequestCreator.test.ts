@@ -1,4 +1,4 @@
-import { PullRequestCreator, BoxMetadata } from './pullRequestCreator';
+import { BoxMetadata, PullRequestCreator } from './pullRequestCreator';
 
 describe('PullRequestCreator', () => {
   let prCreator: PullRequestCreator;
@@ -10,26 +10,23 @@ describe('PullRequestCreator', () => {
       name: 'react-typescript-starter',
       description: 'A modern React TypeScript starter template',
       tags: ['react', 'typescript', 'frontend'],
-      framework: 'React',
-      language: 'TypeScript',
       fileCount: 25,
-      size: '2.5MB',
-      features: ['Hot reload', 'ESLint configuration', 'Jest testing setup']
+      size: '2.5MB'
     };
   });
 
   describe('generatePRPreview', () => {
-    it('should generate title with framework', () => {
+    it('should generate simplified title', () => {
       const preview = prCreator.generatePRPreview(mockBoxMetadata);
 
-      expect(preview.title).toBe('Add react-typescript-starter box (React TypeScript)');
+      expect(preview.title).toBe('Add react-typescript-starter box');
     });
 
-    it('should generate title without framework', () => {
-      const metadata = { ...mockBoxMetadata, framework: 'none' };
+    it('should generate title for any box', () => {
+      const metadata = { ...mockBoxMetadata, name: 'my-custom-box' };
       const preview = prCreator.generatePRPreview(metadata);
 
-      expect(preview.title).toBe('Add react-typescript-starter box (TypeScript)');
+      expect(preview.title).toBe('Add my-custom-box box');
     });
 
     it('should use custom title when provided', () => {
@@ -45,15 +42,11 @@ describe('PullRequestCreator', () => {
 
       expect(preview.description).toContain('## 📦 New Box: react-typescript-starter');
       expect(preview.description).toContain('A modern React TypeScript starter template');
-      expect(preview.description).toContain('**Language**: TypeScript');
-      expect(preview.description).toContain('**Framework**: React');
       expect(preview.description).toContain('**Files**: 25 files');
       expect(preview.description).toContain('**Size**: 2.5MB');
       expect(preview.description).toContain('**Tags**: react, typescript, frontend');
-      expect(preview.description).toContain('### ✨ Features');
-      expect(preview.description).toContain('- Hot reload');
-      expect(preview.description).toContain('- ESLint configuration');
-      expect(preview.description).toContain('- Jest testing setup');
+      expect(preview.description).toContain('### 🎯 Purpose');
+      expect(preview.description).toContain('### 🔍 What\'s Included');
       expect(preview.description).toContain('qraft create my-project react-typescript-starter');
     });
 
@@ -61,7 +54,6 @@ describe('PullRequestCreator', () => {
       const minimalMetadata: BoxMetadata = {
         name: 'simple-box',
         tags: [],
-        language: 'JavaScript',
         fileCount: 5,
         size: '100KB'
       };
@@ -69,9 +61,8 @@ describe('PullRequestCreator', () => {
       const preview = prCreator.generatePRPreview(minimalMetadata);
 
       expect(preview.description).toContain('## 📦 New Box: simple-box');
-      expect(preview.description).toContain('**Language**: JavaScript');
-      expect(preview.description).not.toContain('**Framework**:');
-      expect(preview.description).not.toContain('### ✨ Features');
+      expect(preview.description).toContain('**Files**: 5 files');
+      expect(preview.description).toContain('**Size**: 100KB');
     });
 
     it('should generate correct branch names', () => {
@@ -108,7 +99,7 @@ describe('PullRequestCreator', () => {
       expect(result.success).toBe(true);
       expect(result.prUrl).toBe('https://github.com/owner/repo/pull/123');
       expect(result.prNumber).toBe(123);
-      expect(result.title).toBe('Add react-typescript-starter box (React TypeScript)');
+      expect(result.title).toBe('Add react-typescript-starter box');
       expect(result.message).toContain('[DRY RUN]');
       expect(result.nextSteps).toHaveLength(4);
       expect(result.nextSteps.every(step => step.includes('[DRY RUN]'))).toBe(true);
@@ -257,12 +248,12 @@ describe('PullRequestCreator', () => {
       expect(preview.description).not.toContain('**Tags**:');
     });
 
-    it('should handle missing features', () => {
+    it('should handle metadata with tags', () => {
       const metadata = { ...mockBoxMetadata };
-      delete metadata.features;
+      metadata.tags = ['react', 'typescript'];
       const preview = prCreator.generatePRPreview(metadata);
 
-      expect(preview.description).not.toContain('### ✨ Features');
+      expect(preview.description).toContain('**Tags**: react, typescript');
     });
 
     it('should handle empty features array', () => {
