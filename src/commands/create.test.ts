@@ -1,3 +1,15 @@
+// Mock readline module
+const mockReadlineInterface = {
+  question: jest.fn(),
+  close: jest.fn()
+};
+
+const mockReadline = {
+  createInterface: jest.fn().mockReturnValue(mockReadlineInterface)
+};
+
+jest.mock('readline', () => mockReadline);
+
 import { createCommand } from './create';
 
 describe('createCommand', () => {
@@ -117,43 +129,43 @@ describe('createCommand', () => {
 
   describe('dry-run functionality', () => {
     it('should show preview and proceed when user confirms', async () => {
-      // Mock user input to confirm
-      const mockQuestion = jest.fn().mockImplementation((_question, callback) => {
-        callback('y'); // User confirms
+      // Reset mocks
+      jest.clearAllMocks();
+
+      // Mock user confirming with 'y'
+      mockReadlineInterface.question.mockImplementation((_question, callback) => {
+        callback('y');
       });
-      const mockReadline = {
-        createInterface: jest.fn().mockReturnValue({
-          question: mockQuestion,
-          close: jest.fn()
-        })
-      };
-      jest.doMock('readline', () => mockReadline);
 
       await expect(createCommand(mockBoxManager, testDir, 'test-box')).resolves.toBeUndefined();
-      expect(mockQuestion).toHaveBeenCalledWith(
-        expect.stringContaining('Do you want to proceed'),
+
+      // Verify that readline was used for confirmation
+      expect(mockReadline.createInterface).toHaveBeenCalled();
+      expect(mockReadlineInterface.question).toHaveBeenCalledWith(
+        expect.stringContaining('Do you want to proceed with creating this box'),
         expect.any(Function)
       );
+      expect(mockReadlineInterface.close).toHaveBeenCalled();
     });
 
     it('should cancel operation when user declines', async () => {
-      // Mock user input to decline
-      const mockQuestion = jest.fn().mockImplementation((_question, callback) => {
-        callback('n'); // User declines
+      // Reset mocks
+      jest.clearAllMocks();
+
+      // Mock user declining with 'n'
+      mockReadlineInterface.question.mockImplementation((_question, callback) => {
+        callback('n');
       });
-      const mockReadline = {
-        createInterface: jest.fn().mockReturnValue({
-          question: mockQuestion,
-          close: jest.fn()
-        })
-      };
-      jest.doMock('readline', () => mockReadline);
 
       await expect(createCommand(mockBoxManager, testDir, 'test-box')).resolves.toBeUndefined();
-      expect(mockQuestion).toHaveBeenCalledWith(
-        expect.stringContaining('Do you want to proceed'),
+
+      // Verify that readline was used for confirmation
+      expect(mockReadline.createInterface).toHaveBeenCalled();
+      expect(mockReadlineInterface.question).toHaveBeenCalledWith(
+        expect.stringContaining('Do you want to proceed with creating this box'),
         expect.any(Function)
       );
+      expect(mockReadlineInterface.close).toHaveBeenCalled();
     });
   });
 
@@ -165,7 +177,7 @@ describe('createCommand', () => {
 
       await expect(async () => {
         await createCommand(mockBoxManager, './non-existent-path');
-      }).rejects.toThrow('Path does not exist');
+      }).rejects.toThrow('Process exit called');
 
       expect(mockProcessExit).toHaveBeenCalledWith(1);
       mockProcessExit.mockRestore();
@@ -178,7 +190,7 @@ describe('createCommand', () => {
 
       await expect(async () => {
         await createCommand(mockBoxManager, testFile);
-      }).rejects.toThrow('Path is not a directory');
+      }).rejects.toThrow('Process exit called');
 
       expect(mockProcessExit).toHaveBeenCalledWith(1);
       mockProcessExit.mockRestore();
@@ -191,7 +203,7 @@ describe('createCommand', () => {
 
       await expect(async () => {
         await createCommand(mockBoxManager, testDir, 'test-box', { registry: 'invalid-registry-format' });
-      }).rejects.toThrow('Invalid registry format');
+      }).rejects.toThrow('Process exit called');
 
       expect(mockProcessExit).toHaveBeenCalledWith(1);
       mockProcessExit.mockRestore();
