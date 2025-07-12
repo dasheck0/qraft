@@ -6,6 +6,7 @@ import { authCommand } from './commands/auth';
 import { cacheCommand } from './commands/cache';
 import { configCommand } from './commands/config';
 import { copyCommand } from './commands/copy';
+import { createCommand } from './commands/create';
 import { listCommand } from './commands/list';
 import { BoxManager } from './core/boxManager';
 import { ConfigManager } from './utils/config';
@@ -59,6 +60,33 @@ program
   .action(async (boxName, options) => {
     try {
       await copyCommand(boxManager, boxName, options);
+    } catch (error) {
+      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
+      process.exit(1);
+    }
+  });
+
+// Create command - create a box from local directory
+program
+  .command('create <path> [box-name]')
+  .description('Create a template box from a local directory')
+  .option('--registry <registry>', 'use specific registry')
+  .action(async (...args) => {
+    try {
+      const [localPath, boxName, , command] = args;
+      // Get options from the command object and parent (global options)
+      const commandOptions = command.opts();
+      const parentOptions = command.parent.opts();
+      const allOptions = { ...parentOptions, ...commandOptions };
+
+      // Handle case where boxName might be the options object if not provided
+      if (typeof boxName === 'object' && boxName !== null) {
+        // boxName was not provided, so boxName is actually the options object
+        await createCommand(boxManager, localPath, undefined, allOptions);
+      } else {
+        // Both localPath and boxName provided
+        await createCommand(boxManager, localPath, boxName, allOptions);
+      }
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
       process.exit(1);
