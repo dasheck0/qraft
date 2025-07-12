@@ -32,34 +32,68 @@ export interface ScanOptions {
   includeHidden?: boolean;
 }
 
-export class DirectoryScanner {
-  private defaultExcludePatterns = [
-    'node_modules',
-    '.git',
-    '.svn',
-    '.hg',
-    'dist',
-    'build',
-    'out',
-    'target',
-    '.next',
-    '.nuxt',
-    'coverage',
-    '.nyc_output',
-    '.cache',
-    'tmp',
-    'temp',
-    '*.log',
-    '.DS_Store',
-    'Thumbs.db'
-  ];
+export interface ExclusionPatterns {
+  directories: string[];
+  files: string[];
+  extensions: string[];
+  patterns: string[];
+}
 
-  private defaultOptions: Required<ScanOptions> = {
+export class DirectoryScanner {
+  private readonly defaultExcludePatterns: ExclusionPatterns = {
+    directories: [
+      // Version control
+      '.git', '.svn', '.hg', '.bzr',
+      // Dependencies
+      'node_modules', 'vendor', '__pycache__', '.venv', 'venv', 'env',
+      // Build outputs
+      'dist', 'build', 'out', 'target', 'bin', 'obj',
+      // Framework specific
+      '.next', '.nuxt', '.vuepress', '.docusaurus',
+      // Testing and coverage
+      'coverage', '.nyc_output', '.pytest_cache', '__tests__/__snapshots__',
+      // Caches
+      '.cache', '.parcel-cache', '.webpack', '.rollup.cache',
+      // Temporary
+      'tmp', 'temp', '.tmp',
+      // IDE
+      '.vscode', '.idea', '.vs',
+      // OS
+      '.DS_Store', 'Thumbs.db'
+    ],
+    files: [
+      // Logs
+      '*.log', '*.log.*', 'npm-debug.log*', 'yarn-debug.log*', 'yarn-error.log*',
+      // OS files
+      '.DS_Store', 'Thumbs.db', 'desktop.ini',
+      // Editor files
+      '*~', '*.swp', '*.swo', '.#*',
+      // Build artifacts
+      '*.pyc', '*.pyo', '*.class', '*.o', '*.so', '*.dll', '*.exe',
+      // Package files
+      '*.tar.gz', '*.zip', '*.rar', '*.7z',
+      // Lock files (optional - might want to include these)
+      // 'package-lock.json', 'yarn.lock', 'Pipfile.lock'
+    ],
+    extensions: [
+      '.tmp', '.temp', '.bak', '.backup', '.old', '.orig'
+    ],
+    patterns: [
+      // Backup files
+      '*~', '*.bak', '*.backup', '*.old', '*.orig',
+      // Temporary files
+      '*.tmp', '*.temp', '#*#', '.#*',
+      // Compiled files
+      '*.pyc', '*.pyo', '*.class', '*.o', '*.so'
+    ]
+  };
+
+  private readonly defaultOptions: Required<ScanOptions> = {
     includeContent: false,
     maxContentSize: 1024 * 1024, // 1MB
     maxDepth: 10,
     followSymlinks: false,
-    excludePatterns: this.defaultExcludePatterns,
+    excludePatterns: this.flattenExclusionPatterns(this.defaultExcludePatterns),
     includeHidden: false
   };
 
@@ -173,17 +207,63 @@ export class DirectoryScanner {
     }
   }
 
+  private flattenExclusionPatterns(patterns: ExclusionPatterns): string[] {
+    return [
+      ...patterns.directories,
+      ...patterns.files,
+      ...patterns.extensions,
+      ...patterns.patterns
+    ];
+  }
+
   private shouldExclude(fileName: string, relativePath: string, options: Required<ScanOptions>): boolean {
     // Skip hidden files unless explicitly included
     if (!options.includeHidden && fileName.startsWith('.')) {
+      // Allow some important hidden files for analysis (but they may still be flagged as sensitive)
+      const allowedHiddenFiles = ['.gitignore', '.gitattributes', '.editorconfig', '.env.example', '.env', '.env.local', '.env.production'];
+      if (!allowedHiddenFiles.includes(fileName)) {
+        return true;
+      }
+    }
+
+    // Check against comprehensive exclusion patterns
+    if (this.isExcludedByPatterns(fileName, relativePath, this.defaultExcludePatterns)) {
       return true;
     }
 
-    // Check against exclude patterns
+    // Check against user-provided exclude patterns
     for (const pattern of options.excludePatterns) {
       if (this.matchesPattern(fileName, pattern) || this.matchesPattern(relativePath, pattern)) {
         return true;
       }
+    }
+
+    return false;
+  }
+
+  private isExcludedByPatterns(fileName: string, relativePath: string, patterns: ExclusionPatterns): boolean {
+    // Check directory exclusions
+    const pathParts = relativePath.split('/');
+    for (const part of pathParts) {
+      if (patterns.directories.includes(part)) {
+        return true;
+      }
+    }
+
+    // Check file exclusions
+    if (patterns.files.some(pattern => this.matchesPattern(fileName, pattern))) {
+      return true;
+    }
+
+    // Check extension exclusions
+    const extension = fileName.substring(fileName.lastIndexOf('.'));
+    if (patterns.extensions.includes(extension)) {
+      return true;
+    }
+
+    // Check pattern exclusions
+    if (patterns.patterns.some(pattern => this.matchesPattern(fileName, pattern))) {
+      return true;
     }
 
     return false;
@@ -230,12 +310,83 @@ export class DirectoryScanner {
   // Get file type distribution
   getFileTypeDistribution(structure: DirectoryStructure): Record<string, number> {
     const distribution: Record<string, number> = {};
-    
+
     for (const file of structure.files) {
       const ext = file.extension || 'no-extension';
       distribution[ext] = (distribution[ext] || 0) + 1;
     }
-    
+
     return distribution;
+  }
+
+  // Get exclusion patterns for a specific category
+  getExclusionPatterns(category?: keyof ExclusionPatterns): string[] {
+    if (category) {
+      return this.defaultExcludePatterns[category];
+    }
+    return this.flattenExclusionPatterns(this.defaultExcludePatterns);
+  }
+
+  // Check if a path would be excluded
+  wouldBeExcluded(filePath: string, options: Partial<ScanOptions> = {}): boolean {
+    const opts = { ...this.defaultOptions, ...options };
+    const fileName = filePath.split('/').pop() || '';
+    return this.shouldExclude(fileName, filePath, opts);
+  }
+
+  // Get exclusion statistics for a directory
+  async getExclusionStats(directoryPath: string): Promise<{
+    totalItems: number;
+    excludedItems: number;
+    includedItems: number;
+    exclusionReasons: Record<string, number>;
+  }> {
+    const fs = require('fs');
+    const path = require('path');
+
+    let totalItems = 0;
+    let excludedItems = 0;
+    const exclusionReasons: Record<string, number> = {};
+
+    const scanForStats = async (currentPath: string, relativePath: string = ''): Promise<void> => {
+      try {
+        const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
+
+        for (const entry of entries) {
+          totalItems++;
+          const entryRelativePath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+
+          if (this.shouldExclude(entry.name, entryRelativePath, this.defaultOptions)) {
+            excludedItems++;
+
+            // Determine exclusion reason
+            if (entry.name.startsWith('.') && !this.defaultOptions.includeHidden) {
+              exclusionReasons['hidden files'] = (exclusionReasons['hidden files'] || 0) + 1;
+            } else if (this.defaultExcludePatterns.directories.includes(entry.name)) {
+              exclusionReasons['excluded directories'] = (exclusionReasons['excluded directories'] || 0) + 1;
+            } else if (this.defaultExcludePatterns.files.some(pattern => this.matchesPattern(entry.name, pattern))) {
+              exclusionReasons['excluded files'] = (exclusionReasons['excluded files'] || 0) + 1;
+            } else {
+              exclusionReasons['pattern matches'] = (exclusionReasons['pattern matches'] || 0) + 1;
+            }
+          } else if (entry.isDirectory()) {
+            // Recursively scan non-excluded directories
+            const fullPath = path.join(currentPath, entry.name);
+            await scanForStats(fullPath, entryRelativePath);
+          }
+        }
+      } catch {
+        // Ignore errors and continue
+      }
+    };
+
+    await scanForStats(path.resolve(directoryPath));
+
+    return {
+      totalItems,
+      excludedItems,
+      includedItems: totalItems - excludedItems,
+      exclusionReasons
+    };
   }
 }
