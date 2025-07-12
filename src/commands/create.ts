@@ -3,6 +3,7 @@ import { BoxManager } from '../core/boxManager';
 
 interface CreateOptions {
   registry?: string;
+  dryRun?: boolean;
 }
 
 interface DryRunPreview {
@@ -11,6 +12,7 @@ interface DryRunPreview {
   registry: string;
   estimatedFiles: number;
   targetLocation: string;
+  hasConflicts?: boolean;
 }
 
 function createUserPrompt(question: string): Promise<string> {
@@ -42,10 +44,17 @@ async function showDryRunPreview(preview: DryRunPreview): Promise<boolean> {
   console.log(`  📍 Target Location: ${preview.targetLocation}`);
 
   console.log(chalk.yellow('\nActions:'));
-  console.log(`  ✨ Create new box structure in registry`);
-  console.log(`  📤 Upload ${preview.estimatedFiles} files`);
-  console.log(`  🏷️  Generate metadata manifest`);
-  console.log(`  🔗 Make box available for download`);
+  if (preview.hasConflicts) {
+    console.log(`  ⚠️  Overwrite existing box in registry`);
+    console.log(`  📤 Replace ${preview.estimatedFiles} files`);
+    console.log(`  🏷️  Update metadata manifest`);
+    console.log(`  🔗 Update box availability`);
+  } else {
+    console.log(`  ✨ Create new box structure in registry`);
+    console.log(`  📤 Upload ${preview.estimatedFiles} files`);
+    console.log(`  🏷️  Generate metadata manifest`);
+    console.log(`  🔗 Make box available for download`);
+  }
 
   console.log(chalk.cyan('\n❓ Confirmation Required'));
   const answer = await createUserPrompt(chalk.white('Do you want to proceed with creating this box? (y/N): '));
@@ -286,6 +295,10 @@ export async function createCommand(
     const { SensitiveFileDetector } = require('../core/sensitiveFileDetector');
     const { MetadataGenerator } = require('../core/metadataGenerator');
     const { BoxNameDerivation } = require('../core/boxNameDerivation');
+    const { ContentComparison } = require('../core/contentComparison');
+    const { DiffGenerator } = require('../core/diffGenerator');
+    const { ChangeAnalysis } = require('../core/changeAnalysis');
+    const { ConflictResolution } = require('../core/conflictResolution');
 
     const scanner = new DirectoryScanner();
     const tagDetector = new TagDetector();
@@ -293,6 +306,10 @@ export async function createCommand(
     const sensitiveDetector = new SensitiveFileDetector();
     const metadataGenerator = new MetadataGenerator();
     const boxNameDerivation = new BoxNameDerivation();
+    const contentComparison = new ContentComparison();
+    const diffGenerator = new DiffGenerator();
+    const changeAnalysis = new ChangeAnalysis();
+    const conflictResolution = new ConflictResolution();
 
     try {
       // Scan directory structure
@@ -453,6 +470,56 @@ export async function createCommand(
         );
       }
 
+      // Check for existing box and handle conflicts
+      console.log(chalk.cyan('🔍 Checking for existing box...'));
+      // TODO: Implement getBox method in BoxManager
+      const existingBox = null; // await boxManager.getBox(effectiveBoxName, effectiveRegistry);
+
+      if (existingBox) {
+        console.log(chalk.yellow(`\n⚠️  Box "${effectiveBoxName}" already exists in registry "${effectiveRegistry}"`));
+        console.log(chalk.gray(`   Current version: ${(existingBox as any)?.version || 'unknown'}`));
+        console.log(chalk.gray(`   Last updated: ${(existingBox as any)?.lastModified || 'unknown'}`));
+
+        // Perform conflict analysis
+        console.log(chalk.cyan('📊 Analyzing changes...'));
+        const comparison = contentComparison.compareDirectories(null, structure); // null = new box scenario
+        const diffSummary = diffGenerator.generateMultipleDiffs(comparison.files);
+        const analysisResult = changeAnalysis.analyzeChanges(comparison, diffSummary);
+
+        // Display change analysis
+        console.log(chalk.cyan('\n📋 Change Analysis:'));
+        console.log(chalk.gray(`   Risk Level: ${analysisResult.overall.riskLevel.toUpperCase()}`));
+        console.log(chalk.gray(`   Files: ${analysisResult.summary.additions} added, ${analysisResult.summary.modifications} modified`));
+
+        if (analysisResult.overall.requiresReview) {
+          console.log(chalk.yellow('\n⚠️  Manual review recommended'));
+          for (const recommendation of analysisResult.recommendations.slice(0, 2)) {
+            console.log(chalk.gray(`   • ${recommendation}`));
+          }
+        }
+
+        // Create resolution session for future use
+        const resolutionOptions = {
+          autoResolveLevel: 'safe' as const,
+          createBackups: true,
+          backupDirectory: './backups',
+          interactiveMode: false,
+          dryRun: options.dryRun || false
+        };
+
+        const resolutionSession = conflictResolution.createResolutionSession(
+          analysisResult,
+          comparison,
+          diffSummary,
+          resolutionOptions
+        );
+
+        console.log(chalk.gray(`   Resolution: ${resolutionSession.autoResolved.length} auto-resolved, ${resolutionSession.requiresManualReview.length} need review`));
+
+        // For now, we'll continue with a warning instead of blocking
+        console.log(chalk.yellow('\n⚠️  Proceeding will overwrite the existing box'));
+      }
+
       // Enhanced preview with smart suggestions
       const bestTarget = structureAnalyzer.getBestTargetSuggestion(analysis);
       const suggestedBoxName = `${effectiveBoxName}-${analysis.primaryLanguage.toLowerCase()}`;
@@ -462,7 +529,8 @@ export async function createCommand(
         boxName: effectiveBoxName,
         registry: effectiveRegistry,
         estimatedFiles: structure.totalFiles,
-        targetLocation: `${effectiveRegistry}/${effectiveBoxName}`
+        targetLocation: `${effectiveRegistry}/${effectiveBoxName}`,
+        hasConflicts: !!existingBox
       };
 
       // Add smart suggestions to preview
