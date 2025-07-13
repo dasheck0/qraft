@@ -189,7 +189,7 @@ export class RepositoryManager {
       });
 
       // Create commit
-      const commitMessage = options.commitMessage || `Add ${boxName} box`;
+      const commitMessage = options.commitMessage || `feat: add ${boxName} box`;
       const { data: newCommit } = await octokit.rest.git.createCommit({
         owner,
         repo,

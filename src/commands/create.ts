@@ -224,7 +224,7 @@ export async function createCommand(
       manifest,
       manifest.remotePath, // Use remotePath from manifest
       {
-        commitMessage: `Add ${manifest.name} box - ${manifest.description}`,
+        commitMessage: `feat: add ${manifest.name} box - ${manifest.description}`,
         createPR: true
       }
     );

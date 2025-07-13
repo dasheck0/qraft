@@ -283,7 +283,7 @@ export async function updateCommand(
       updatedManifest,
       updatedManifest.remotePath,
       {
-        commitMessage: `Update ${updatedManifest.name} to v${updatedManifest.version}`,
+        commitMessage: `feat: update ${updatedManifest.name} to v${updatedManifest.version}`,
         createPR: true
       }
     );
