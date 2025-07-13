@@ -8,6 +8,7 @@ import { configCommand } from './commands/config';
 import { copyCommand } from './commands/copy';
 import { createCommand } from './commands/create';
 import { listCommand } from './commands/list';
+import { updateCommand } from './commands/update';
 import { BoxManager } from './core/boxManager';
 import { ConfigManager } from './utils/config';
 
@@ -89,6 +90,30 @@ program
         // Both localPath and boxName provided
         await createCommand(boxManager, localPath, boxName, allOptions);
       }
+    } catch (error) {
+      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
+      process.exit(1);
+    }
+  });
+
+// Update command - update an existing box
+program
+  .command('update <path>')
+  .description('Update an existing template box from a local directory')
+  .option('--registry <registry>', 'use specific registry')
+  .option('--no-interactive', 'disable interactive mode (use quick mode)')
+  .option('--dry-run', 'show what would be updated without actually updating')
+  .option('--force', 'force update even if there are conflicts')
+  .option('--skip-conflict-resolution', 'skip conflict resolution and proceed with update')
+  .action(async (...args) => {
+    try {
+      const [localPath, , command] = args;
+      // Get options from the command object and parent (global options)
+      const commandOptions = command.opts();
+      const parentOptions = command.parent.opts();
+      const allOptions = { ...parentOptions, ...commandOptions };
+
+      await updateCommand(boxManager, localPath, allOptions);
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
       process.exit(1);

@@ -7,6 +7,8 @@ import { RepositoryManager } from '../core/repositoryManager';
 import { StructureAnalyzer } from '../core/structureAnalyzer';
 import { TagDetector } from '../core/tagDetector';
 import { ManifestBuilder } from '../interactive/manifestBuilder';
+import { ManifestUtils } from '../utils/manifestUtils';
+import { updateCommand } from './update';
 
 interface CreateOptions {
   registry?: string;
@@ -97,10 +99,45 @@ export async function createCommand(
   boxName?: string,
   options: CreateOptions = {}
 ): Promise<void> {
+  // Step 0: Check if this is an existing box that should be updated instead
+  console.log(chalk.cyan('🔍 Checking for existing box...'));
+
+  if (await ManifestUtils.qraftDirectoryExists(localPath)) {
+    if (await ManifestUtils.hasCompleteLocalManifest(localPath)) {
+      console.log(chalk.yellow('📦 Existing box detected!'));
+      console.log(chalk.gray('This directory already contains a qraft box with manifest.'));
+      console.log(chalk.gray('Switching to update workflow instead of create workflow.\n'));
+
+      // Route to update command instead
+      return updateCommand(boxManager, localPath, {
+        registry: options.registry,
+        dryRun: options.dryRun,
+        interactive: options.interactive
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  Incomplete .qraft directory found'));
+      console.log(chalk.gray('The .qraft directory exists but manifest files are incomplete.'));
+
+      if (options.interactive !== false) {
+        const answer = await createUserPrompt('Do you want to recreate the box? This will overwrite existing .qraft files. (y/N): ');
+        if (answer.toLowerCase() !== 'y') {
+          console.log(chalk.yellow('⏹️  Operation cancelled by user'));
+          return;
+        }
+
+        // Clean up incomplete .qraft directory
+        await ManifestUtils.removeQraftDirectory(localPath);
+        console.log(chalk.gray('🧹 Cleaned up incomplete .qraft directory\n'));
+      } else {
+        throw new Error('Incomplete .qraft directory found. Use --interactive mode to recreate or manually clean up the .qraft directory.');
+      }
+    }
+  }
+
   const manifestBuilder = new ManifestBuilder();
-  
+
   console.log(chalk.blue.bold('📦 Creating Box from Local Directory'));
-  
+
   if (options.interactive !== false) {
     console.log(chalk.gray('🎯 Interactive mode enabled - you\'ll be guided through the process\n'));
   }
