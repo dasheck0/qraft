@@ -147,3 +147,7 @@ TODO.md
 .qraftrc.json
 .qraftrc.yaml
 .qraftrc.yml
+.qraft/
+
+.tasks
+tasks
