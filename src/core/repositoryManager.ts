@@ -2,6 +2,7 @@ import { Octokit } from '@octokit/rest';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { BoxManifest } from '../types';
+import { ManifestManager } from './manifestManager';
 import { PermissionChecker } from './permissionChecker';
 import { BoxMetadata, PullRequestCreator } from './pullRequestCreator';
 import { RepositoryForker } from './repositoryForker';
@@ -35,12 +36,14 @@ export class RepositoryManager {
   private readonly permissionChecker: PermissionChecker;
   private readonly repositoryForker: RepositoryForker;
   private readonly pullRequestCreator: PullRequestCreator;
+  private readonly manifestManager: ManifestManager;
 
   constructor(githubToken?: string | undefined) {
     this.githubToken = githubToken;
     this.permissionChecker = new PermissionChecker(githubToken);
     this.repositoryForker = new RepositoryForker(githubToken);
     this.pullRequestCreator = new PullRequestCreator(githubToken);
+    this.manifestManager = new ManifestManager();
   }
 
   /**
@@ -191,6 +194,14 @@ export class RepositoryManager {
         sha: newCommit.sha
       });
 
+      // Store local manifest copy after successful creation
+      try {
+        await this.storeLocalManifestCopy(localPath, manifest, `${owner}/${repo}`, boxName);
+      } catch (manifestError) {
+        // Log manifest storage error but don't fail the entire operation
+        console.warn(`Warning: Failed to store local manifest copy: ${manifestError instanceof Error ? manifestError.message : 'Unknown error'}`);
+      }
+
       const result: CreateBoxResult = {
         success: true,
         message: `Box '${boxName}' created successfully`,
@@ -313,7 +324,7 @@ export class RepositoryManager {
    */
   private calculateTotalSize(files: FileToUpload[]): string {
     const totalBytes = files.reduce((sum, file) => {
-      const size = typeof file.content === 'string' 
+      const size = typeof file.content === 'string'
         ? Buffer.byteLength(file.content, 'utf-8')
         : file.content.length;
       return sum + size;
@@ -322,5 +333,40 @@ export class RepositoryManager {
     if (totalBytes < 1024) return `${totalBytes}B`;
     if (totalBytes < 1024 * 1024) return `${(totalBytes / 1024).toFixed(1)}KB`;
     return `${(totalBytes / (1024 * 1024)).toFixed(1)}MB`;
+  }
+
+  /**
+   * Store local manifest copy after box creation
+   * @param localPath Local path where the box was created from
+   * @param manifest Box manifest
+   * @param registry Registry identifier (owner/repo)
+   * @param boxName Box name
+   * @returns Promise<void>
+   */
+  private async storeLocalManifestCopy(
+    localPath: string,
+    manifest: BoxManifest,
+    registry: string,
+    boxName: string
+  ): Promise<void> {
+    try {
+      // Store the manifest with source information
+      await this.manifestManager.storeLocalManifest(
+        localPath,
+        manifest,
+        registry,
+        `${registry}/${boxName}`
+      );
+    } catch (error) {
+      throw new Error(`Failed to store local manifest copy: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get manifest manager instance
+   * @returns ManifestManager Manifest manager instance
+   */
+  getManifestManager(): ManifestManager {
+    return this.manifestManager;
   }
 }
