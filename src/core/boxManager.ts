@@ -7,7 +7,9 @@ import {
     BoxReference
 } from '../types';
 import { ConfigManager } from '../utils/config';
+import { ManifestUtils } from '../utils/manifestUtils';
 import { CacheManager } from './cacheManager';
+import { LocalManifestEntry, ManifestManager } from './manifestManager';
 import { RegistryManager } from './registryManager';
 
 /**
@@ -17,9 +19,11 @@ export class BoxManager {
   private configManager: ConfigManager;
   private registryManager: RegistryManager | null = null;
   private cacheManager: CacheManager | null = null;
+  private manifestManager: ManifestManager;
 
   constructor(configManager?: ConfigManager) {
     this.configManager = configManager || new ConfigManager();
+    this.manifestManager = new ManifestManager();
   }
 
   /**
@@ -72,7 +76,7 @@ export class BoxManager {
    */
   async discoverBoxes(registryName?: string): Promise<BoxInfo[]> {
     await this.initializeManagers();
-    
+
     try {
       const boxNames = await this.registryManager!.listBoxes(registryName);
       const boxes: BoxInfo[] = [];
@@ -100,8 +104,8 @@ export class BoxManager {
    */
   async getBoxInfo(boxRef: BoxReference | string): Promise<BoxInfo | null> {
     await this.initializeManagers();
-    
-    const parsedRef = typeof boxRef === 'string' 
+
+    const parsedRef = typeof boxRef === 'string'
       ? await this.parseBoxReference(boxRef)
       : boxRef;
 
@@ -144,8 +148,8 @@ export class BoxManager {
    */
   async boxExists(boxRef: BoxReference | string): Promise<boolean> {
     await this.initializeManagers();
-    
-    const parsedRef = typeof boxRef === 'string' 
+
+    const parsedRef = typeof boxRef === 'string'
       ? await this.parseBoxReference(boxRef)
       : boxRef;
 
@@ -197,6 +201,14 @@ export class BoxManager {
       // Download and copy files
       const results = await this.downloadAndCopyFiles(boxRef, boxInfo, resolvedTargetDir, config.force);
 
+      // Store manifest locally after successful file operations
+      try {
+        await this.storeManifestLocally(boxRef, boxInfo, resolvedTargetDir);
+      } catch (manifestError) {
+        // Log manifest storage error but don't fail the entire operation
+        console.warn(`Warning: Failed to store manifest locally: ${manifestError instanceof Error ? manifestError.message : 'Unknown error'}`);
+      }
+
       // Analyze results
       const copiedFiles = results.filter(r => r.success).map(r => r.destination);
       const skippedFiles = results.filter(r => r.skipped).map(r => r.destination);
@@ -247,7 +259,8 @@ export class BoxManager {
     force: boolean
   ): Promise<Array<{ success: boolean; skipped: boolean; destination: string; error?: Error }>> {
     const results: Array<{ success: boolean; skipped: boolean; destination: string; error?: Error }> = [];
-    const excludePatterns = boxInfo.manifest.exclude || [];
+    // Ensure .qraft/ is always excluded to prevent recursive boxing
+    const excludePatterns = ManifestUtils.getUpdatedExcludePatterns(boxInfo.manifest.exclude || []);
 
     for (const filePath of boxInfo.files) {
       // Check if file should be excluded
@@ -276,11 +289,11 @@ export class BoxManager {
 
         // Try to get file from cache first
         let fileContent = await this.cacheManager!.getCachedFile(boxRef, filePath);
-        
+
         if (!fileContent) {
           // Download from GitHub
           fileContent = await this.registryManager!.downloadFile(boxRef, filePath);
-          
+
           // Cache the file
           const fileContents = new Map<string, Buffer>();
           fileContents.set(filePath, fileContent);
@@ -324,13 +337,13 @@ export class BoxManager {
     }
 
     const normalizedPath = filePath.replace(/\\/g, '/');
-    
+
     return excludePatterns.some(pattern => {
       const regexPattern = pattern
         .replace(/\./g, '\\.')
         .replace(/\*/g, '.*')
         .replace(/\?/g, '.');
-      
+
       const regex = new RegExp(`^${regexPattern}$`, 'i');
       return regex.test(normalizedPath) || normalizedPath.includes(pattern);
     });
@@ -448,6 +461,115 @@ export class BoxManager {
 
     // Fall back to global token
     return config.globalToken;
+  }
+
+  /**
+   * Store manifest locally in the target directory
+   * @param boxRef Box reference
+   * @param boxInfo Box information
+   * @param targetDir Target directory
+   * @returns Promise<void>
+   */
+  private async storeManifestLocally(
+    boxRef: BoxReference,
+    boxInfo: BoxInfo,
+    targetDir: string
+  ): Promise<void> {
+    try {
+      // Store the manifest with source information
+      await this.manifestManager.storeLocalManifest(
+        targetDir,
+        boxInfo.manifest,
+        boxRef.registry,
+        boxRef.fullReference
+      );
+    } catch (error) {
+      throw new Error(`Failed to store manifest locally: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Check if a box is new or updated compared to local manifest
+   * @param boxInfo Remote box information
+   * @param targetDir Target directory
+   * @returns Promise<'new' | 'updated' | 'identical' | 'unknown'>
+   */
+  async detectBoxState(
+    boxInfo: BoxInfo,
+    targetDir: string
+  ): Promise<'new' | 'updated' | 'identical' | 'unknown'> {
+    try {
+      const localManifest = await this.manifestManager.getLocalManifest(targetDir);
+
+      if (!localManifest) {
+        return 'new';
+      }
+
+      const comparison = this.manifestManager.compareManifests(
+        localManifest.manifest,
+        boxInfo.manifest
+      );
+
+      if (comparison.isIdentical) {
+        return 'identical';
+      } else {
+        return 'updated';
+      }
+    } catch (error) {
+      return 'unknown';
+    }
+  }
+
+  /**
+   * Get local manifest for a directory
+   * @param targetDir Target directory
+   * @returns Promise<LocalManifestEntry | null>
+   */
+  async getLocalManifest(targetDir: string): Promise<LocalManifestEntry | null> {
+    return this.manifestManager.getLocalManifest(targetDir);
+  }
+
+  /**
+   * Check if local manifest exists
+   * @param targetDir Target directory
+   * @returns Promise<boolean>
+   */
+  async hasLocalManifest(targetDir: string): Promise<boolean> {
+    return this.manifestManager.hasLocalManifest(targetDir);
+  }
+
+  /**
+   * Synchronize local manifest with remote
+   * @param boxRef Box reference
+   * @param targetDir Target directory
+   * @returns Promise<boolean> True if sync was needed and performed
+   */
+  async syncManifest(boxRef: BoxReference, targetDir: string): Promise<boolean> {
+    try {
+      const boxInfo = await this.getBoxInfo(boxRef);
+      if (!boxInfo) {
+        throw new Error(`Box '${boxRef.fullReference}' not found`);
+      }
+
+      const state = await this.detectBoxState(boxInfo, targetDir);
+
+      if (state === 'updated' || state === 'new') {
+        await this.storeManifestLocally(boxRef, boxInfo, targetDir);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      throw new Error(`Failed to sync manifest: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get manifest manager instance
+   * @returns ManifestManager Manifest manager instance
+   */
+  getManifestManager(): ManifestManager {
+    return this.manifestManager;
   }
 
   /**
