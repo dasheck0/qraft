@@ -69,7 +69,10 @@ async function showDryRunPreview(preview: DryRunPreview): Promise<boolean> {
 
 async function getDefaultRegistry(boxManager: BoxManager): Promise<string> {
   const config = await boxManager.getConfigManager().getConfig();
-  return config.defaultRegistry || 'dasheck0/qraft-templates';
+  if (!config.defaultRegistry) {
+    throw new Error('No default registry configured. Please specify a registry with --registry option or configure a default registry.');
+  }
+  return config.defaultRegistry;
 }
 
 async function validateRegistryAccess(registry: string): Promise<void> {

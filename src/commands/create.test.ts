@@ -1,4 +1,10 @@
-// Mock readline module
+// Mock inquirer
+const mockInquirerPrompt = jest.fn();
+jest.mock('inquirer', () => ({
+  prompt: mockInquirerPrompt
+}));
+
+// Mock readline module for createUserPrompt function
 const mockQuestion = jest.fn();
 const mockClose = jest.fn();
 const mockCreateInterface = jest.fn(() => ({
@@ -6,13 +12,7 @@ const mockCreateInterface = jest.fn(() => ({
   close: mockClose
 }));
 
-// Mock both the ES6 import and CommonJS require
 jest.mock('readline', () => ({
-  createInterface: mockCreateInterface
-}));
-
-// Mock the require function for the createUserPrompt function
-jest.doMock('readline', () => ({
   createInterface: mockCreateInterface
 }));
 
@@ -43,6 +43,39 @@ describe('createCommand', () => {
     }),
     getGitHubToken: jest.fn().mockResolvedValue('mock-token')
   } as any;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // Reset readline mocks
+    mockQuestion.mockClear();
+    mockClose.mockClear();
+    mockCreateInterface.mockClear();
+
+    // Set up default inquirer responses for ManifestBuilder
+    mockInquirerPrompt
+      // Basic information
+      .mockResolvedValueOnce({
+        name: 'test-box',
+        description: 'Test description',
+        author: 'Test Author',
+        version: '1.0.0'
+      })
+      // Tags and Configuration
+      .mockResolvedValueOnce({
+        tags: ['test'],
+        defaultTarget: './target'
+      })
+      // Advanced options
+      .mockResolvedValueOnce({
+        addExclusions: false,
+        addPostInstall: false
+      })
+      // Confirmation
+      .mockResolvedValueOnce({
+        confirm: true
+      });
+  });
 
   const testDir = './test-temp-dir';
   const testFile = './test-temp-file.txt';
@@ -82,16 +115,9 @@ describe('createCommand', () => {
   describe('basic functionality', () => {
     it('should accept valid local directory and optional box name', async () => {
       // Mock user input to automatically confirm
-      const mockQuestion = jest.fn().mockImplementation((_question, callback) => {
+      mockQuestion.mockImplementation((_question, callback) => {
         callback('y'); // Auto-confirm
       });
-      const mockReadline = {
-        createInterface: jest.fn().mockReturnValue({
-          question: mockQuestion,
-          close: jest.fn()
-        })
-      };
-      jest.doMock('readline', () => mockReadline);
 
       // Should run without throwing errors with valid directory
       await expect(createCommand(mockBoxManager, testDir, 'test-box')).resolves.toBeUndefined();
@@ -99,16 +125,9 @@ describe('createCommand', () => {
 
     it('should work with only valid local path', async () => {
       // Mock user input to automatically confirm
-      const mockQuestion = jest.fn().mockImplementation((_question, callback) => {
+      mockQuestion.mockImplementation((_question, callback) => {
         callback('y'); // Auto-confirm
       });
-      const mockReadline = {
-        createInterface: jest.fn().mockReturnValue({
-          question: mockQuestion,
-          close: jest.fn()
-        })
-      };
-      jest.doMock('readline', () => mockReadline);
 
       // Should run without throwing errors with valid directory
       await expect(createCommand(mockBoxManager, testDir)).resolves.toBeUndefined();
@@ -116,16 +135,9 @@ describe('createCommand', () => {
 
     it('should accept registry option with valid directory', async () => {
       // Mock user input to automatically confirm
-      const mockQuestion = jest.fn().mockImplementation((_question, callback) => {
+      mockQuestion.mockImplementation((_question, callback) => {
         callback('y'); // Auto-confirm
       });
-      const mockReadline = {
-        createInterface: jest.fn().mockReturnValue({
-          question: mockQuestion,
-          close: jest.fn()
-        })
-      };
-      jest.doMock('readline', () => mockReadline);
 
       // Should run without throwing errors with valid directory and registry
       await expect(createCommand(mockBoxManager, testDir, 'test-box', { registry: 'custom/registry' })).resolves.toBeUndefined();
@@ -133,16 +145,9 @@ describe('createCommand', () => {
 
     it('should show interactive mode is enabled by default', async () => {
       // Mock user input to automatically confirm
-      const mockQuestion = jest.fn().mockImplementation((_question, callback) => {
+      mockQuestion.mockImplementation((_question, callback) => {
         callback('y'); // Auto-confirm
       });
-      const mockReadline = {
-        createInterface: jest.fn().mockReturnValue({
-          question: mockQuestion,
-          close: jest.fn()
-        })
-      };
-      jest.doMock('readline', () => mockReadline);
 
       // Should run without throwing errors - interactive mode is the default behavior
       await expect(createCommand(mockBoxManager, testDir)).resolves.toBeUndefined();
@@ -161,10 +166,8 @@ describe('createCommand', () => {
 
       await expect(createCommand(mockBoxManager, testDir, 'test-box')).resolves.toBeUndefined();
 
-      // Verify that the confirmation prompt was shown (we can see it in the logs)
-      // The readline mock doesn't work because createUserPrompt uses require('readline')
-      // But we can verify the functionality works by checking the command completes
-      expect(true).toBe(true); // Test passes if no errors are thrown
+      // Verify that the confirmation prompt was called
+      expect(mockQuestion).toHaveBeenCalled();
     });
 
     it('should cancel operation when user declines', async () => {
@@ -178,10 +181,8 @@ describe('createCommand', () => {
 
       await expect(createCommand(mockBoxManager, testDir, 'test-box')).resolves.toBeUndefined();
 
-      // Verify that the confirmation prompt was shown (we can see it in the logs)
-      // The readline mock doesn't work because createUserPrompt uses require('readline')
-      // But we can verify the functionality works by checking the command completes
-      expect(true).toBe(true); // Test passes if no errors are thrown
+      // Verify that the confirmation prompt was called
+      expect(mockQuestion).toHaveBeenCalled();
     });
   });
 
@@ -231,7 +232,8 @@ describe('createCommand', () => {
           getConfig: jest.fn().mockResolvedValue({
             defaultRegistry: null // No default registry
           })
-        })
+        }),
+        getGitHubToken: jest.fn().mockResolvedValue('mock-token')
       } as any;
 
       const mockProcessExit = jest.spyOn(process, 'exit').mockImplementation(() => {
