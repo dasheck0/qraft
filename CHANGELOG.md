@@ -27,6 +27,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+
+## [1.1.0] - 2025-07-13
+
+### Added
+- implement update workflow with automatic detection
+- achieve 100% test success for Strategy 1 implementation
+- implement Strategy 1 - Separate Box Name and Remote Path
+- add manifest synchronization capabilities to CacheManager
+- add manifest storage to RepositoryManager box creation
+- integrate manifest synchronization into BoxManager
+- add manifest conflict resolution to conflict resolution system
+- extend content comparison with manifest comparison support
+- add manifest utilities and manager for local manifest operations
+- enhance RepositoryManager with automatic default branch detection
+- implement truly interactive create command with inquirer
+- implement complete box creation functionality with RepositoryManager
+- complete task 5.6 - integrated create command workflow architecture
+- complete tasks 5.3-5.4 - confirmation workflows and metadata overrides
+- complete tasks 5.1-5.2 - interactive UX with metadata prompts and progress indicators
+- complete task 4.0 - comprehensive repository management and permission handling
+- complete task 3.0 - comprehensive conflict resolution and diff visualization
+- complete task 2.0 - advanced metadata generation and box name derivation
+- implement smart directory processing and detection (task 2.0)
+- implement core create command infrastructure (task 1.0)
+
+### Fixed
+- resolve test compatibility issues for Strategy 1
+- update tests to match simplified BoxManifest structure
+- correct default registry format to owner/repository pattern
+- achieve 100% test success rate by fixing readline mocking in create.test.ts
+- resolve test failures and improve test reliability
+
+### Documentation
+- update documentation
+- update README with create command and .qraft directory documentation
+- update task documentation to reflect completed manifest sync features
+- add section to why qraft
+
+### Changed
+- simplify BoxManifest structure by removing unnecessary fields
+
+### Tests
+- add comprehensive tests for manifest synchronization features
+- fix tests
+
+### Maintenance
+- Merge branch 'feature/add-create-command' into develop
+- remove some files from vcs
+- make generated commit messages commitlint compliant
+
 ## [1.0.8] - 2025-07-08
 
 ### Fixed
