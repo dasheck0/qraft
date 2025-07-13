@@ -167,10 +167,53 @@ describe('CacheManager', () => {
       // Operations should not throw errors but handle gracefully
       expect(await invalidManager.hasValidCache(testBoxRef)).toBe(false);
       expect(await invalidManager.getCacheEntry(testBoxRef)).toBeNull();
-      
+
       const stats = await invalidManager.getCacheStats();
       expect(stats.totalEntries).toBe(0);
       expect(stats.totalSize).toBe(0);
+    });
+  });
+
+  describe('manifest synchronization', () => {
+    it('should handle manifest storage for cached boxes', async () => {
+      // This should not throw an error even if cache doesn't exist
+      await expect(cacheManager.storeCachedManifest(testBoxRef, testManifest, 'test-registry', 'test/box'))
+        .resolves
+        .not.toThrow();
+    });
+
+    it('should return null for non-existent cached manifest', async () => {
+      const cachedManifest = await cacheManager.getCachedManifest(testBoxRef);
+      expect(cachedManifest).toBeNull();
+    });
+
+    it('should return false for non-existent cached manifest check', async () => {
+      const hasManifest = await cacheManager.hasCachedManifest(testBoxRef);
+      expect(hasManifest).toBe(false);
+    });
+
+    it('should handle manifest sync for non-cached boxes', async () => {
+      const syncResult = await cacheManager.syncCachedManifest(testBoxRef, testManifest, 'test-registry', 'test/box');
+      expect(syncResult).toBe(false);
+    });
+
+    it('should provide access to manifest manager', () => {
+      const manifestManager = cacheManager.getManifestManager();
+      expect(manifestManager).toBeDefined();
+      expect(typeof manifestManager.storeLocalManifest).toBe('function');
+    });
+
+    it('should handle disabled cache for manifest operations', async () => {
+      const disabledManager = new CacheManager({ enabled: false, ttl: 3600, directory: '/tmp' });
+
+      // All manifest operations should work but return appropriate values
+      await expect(disabledManager.storeCachedManifest(testBoxRef, testManifest))
+        .resolves
+        .not.toThrow();
+
+      expect(await disabledManager.getCachedManifest(testBoxRef)).toBeNull();
+      expect(await disabledManager.hasCachedManifest(testBoxRef)).toBe(false);
+      expect(await disabledManager.syncCachedManifest(testBoxRef, testManifest)).toBe(false);
     });
   });
 });
