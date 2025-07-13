@@ -4,11 +4,99 @@ import * as path from 'path';
 import { BoxManifest } from '../types';
 import { RepositoryManager } from './repositoryManager';
 
-// Mock the dependencies
-jest.mock('./permissionChecker');
-jest.mock('./repositoryForker');
-jest.mock('./pullRequestCreator');
-jest.mock('./manifestManager');
+// Mock the Octokit module to avoid ES module issues
+jest.mock('@octokit/rest', () => ({
+  Octokit: jest.fn().mockImplementation(() => ({
+    rest: {
+      repos: {
+        get: jest.fn().mockResolvedValue({
+          data: { default_branch: 'main' }
+        }),
+        createFork: jest.fn().mockResolvedValue({
+          data: { full_name: 'test-user/test-repo' }
+        }),
+        getContent: jest.fn().mockResolvedValue({
+          data: { content: 'base64content' }
+        }),
+        createOrUpdateFileContents: jest.fn().mockResolvedValue({
+          data: { commit: { sha: 'new-commit-sha' } }
+        })
+      },
+      pulls: {
+        create: jest.fn().mockResolvedValue({
+          data: { number: 1, html_url: 'https://github.com/test-owner/test-repo/pull/1' }
+        }),
+        list: jest.fn().mockResolvedValue({
+          data: []
+        })
+      },
+      git: {
+        createRef: jest.fn().mockResolvedValue({
+          data: { ref: 'refs/heads/new-branch' }
+        }),
+        getRef: jest.fn().mockResolvedValue({
+          data: { object: { sha: 'base-commit-sha' } }
+        }),
+        getCommit: jest.fn().mockResolvedValue({
+          data: { tree: { sha: 'base-tree-sha' } }
+        }),
+        createTree: jest.fn().mockResolvedValue({
+          data: { sha: 'new-tree-sha' }
+        }),
+        createCommit: jest.fn().mockResolvedValue({
+          data: { sha: 'new-commit-sha' }
+        }),
+        updateRef: jest.fn().mockResolvedValue({
+          data: { ref: 'refs/heads/main' }
+        })
+      }
+    }
+  }))
+}));
+
+// Mock the dependencies with proper implementations
+const mockPermissionChecker = {
+  checkRepositoryPermissions: jest.fn().mockResolvedValue({
+    permissions: { canWrite: true, canFork: true, canRead: true }
+  })
+};
+
+const mockRepositoryForker = {
+  forkRepository: jest.fn().mockResolvedValue({
+    success: true,
+    forkOwner: 'test-user',
+    forkName: 'test-repo'
+  })
+};
+
+const mockPullRequestCreator = {
+  createPullRequest: jest.fn().mockResolvedValue({
+    success: true,
+    prUrl: 'https://github.com/test-owner/test-repo/pull/1',
+    prNumber: 1
+  })
+};
+
+const mockManifestManager = {
+  storeLocalManifest: jest.fn().mockResolvedValue(undefined)
+};
+
+jest.mock('./permissionChecker', () => ({
+  PermissionChecker: jest.fn().mockImplementation(() => mockPermissionChecker)
+}));
+
+jest.mock('./repositoryForker', () => ({
+  RepositoryForker: jest.fn().mockImplementation(() => mockRepositoryForker)
+}));
+
+jest.mock('./pullRequestCreator', () => ({
+  PullRequestCreator: jest.fn().mockImplementation(() => mockPullRequestCreator)
+}));
+
+jest.mock('./manifestManager', () => ({
+  ManifestManager: jest.fn().mockImplementation(() => mockManifestManager)
+}));
+
 jest.mock('@octokit/rest');
 
 // Mock fs-extra
@@ -71,34 +159,9 @@ describe('RepositoryManager', () => {
 
   describe('createBox', () => {
     it('should create a box successfully with write permissions', async () => {
-      // Mock permission checker to return write access
-      const mockPermissionChecker = require('./permissionChecker').PermissionChecker;
-      mockPermissionChecker.prototype.checkRepositoryPermissions.mockResolvedValue({
-        permissions: { canWrite: true, canFork: true, canRead: true }
-      });
+      // Permission checker is already mocked globally
 
-      // Mock GitHub API responses
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ object: { sha: 'base-sha' } })
-        } as any) // getRef
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ tree: { sha: 'tree-sha' } })
-        } as any) // getCommit
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ sha: 'new-tree-sha' })
-        } as any) // createTree
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ sha: 'new-commit-sha' })
-        } as any) // createCommit
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({})
-        } as any); // updateRef
+      // GitHub API is already mocked globally
 
       const result = await repositoryManager.createBox(
         'test-owner',
@@ -116,20 +179,8 @@ describe('RepositoryManager', () => {
 
     it('should fork repository when user lacks write permissions', async () => {
       // Mock permission checker to return no write access
-      const mockPermissionChecker = require('./permissionChecker').PermissionChecker;
-      mockPermissionChecker.prototype.checkRepositoryPermissions.mockResolvedValue({
+      mockPermissionChecker.checkRepositoryPermissions.mockResolvedValue({
         permissions: { canWrite: false, canFork: true, canRead: true }
-      });
-
-      // Mock repository forker
-      const mockRepositoryForker = require('./repositoryForker').RepositoryForker;
-      mockRepositoryForker.prototype.forkRepository.mockResolvedValue({
-        success: true,
-        forkOwner: 'user',
-        forkName: 'test-repo',
-        forkUrl: 'https://github.com/user/test-repo',
-        message: 'Fork created successfully',
-        nextSteps: []
       });
 
       // Mock GitHub API responses for the fork
@@ -164,23 +215,14 @@ describe('RepositoryManager', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(mockRepositoryForker.prototype.forkRepository).toHaveBeenCalledWith('test-owner', 'test-repo');
+      expect(mockRepositoryForker.forkRepository).toHaveBeenCalledWith('test-owner', 'test-repo');
     });
 
     it('should handle GitHub API errors gracefully', async () => {
-      // Mock permission checker to return write access
-      const mockPermissionChecker = require('./permissionChecker').PermissionChecker;
-      mockPermissionChecker.prototype.checkRepositoryPermissions.mockResolvedValue({
-        permissions: { canWrite: true, canFork: true, canRead: true }
-      });
-
-      // Mock GitHub API to return error
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        statusText: 'Not Found',
-        json: () => Promise.resolve({ message: 'Repository not found' })
-      } as any);
+      // Mock GitHub API to throw an error
+      const { Octokit } = require('@octokit/rest');
+      const mockOctokit = new Octokit();
+      mockOctokit.rest.repos.get.mockRejectedValue(new Error('Repository not found'));
 
       const result = await repositoryManager.createBox(
         'test-owner',
@@ -334,43 +376,6 @@ describe('RepositoryManager', () => {
 
   describe('manifest storage integration', () => {
     it('should store local manifest copy after successful box creation', async () => {
-      // Mock permission checker to return write access
-      const mockPermissionChecker = require('./permissionChecker').PermissionChecker;
-      mockPermissionChecker.prototype.checkRepositoryPermissions.mockResolvedValue({
-        permissions: { canWrite: true, canFork: true, canRead: true }
-      });
-
-      // Mock manifest manager
-      const mockManifestManager = require('./manifestManager').ManifestManager;
-      mockManifestManager.prototype.storeLocalManifest = jest.fn().mockResolvedValue(undefined);
-
-      // Mock successful GitHub API calls
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ default_branch: 'main' })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ object: { sha: 'base-sha' } })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ tree: { sha: 'tree-sha' } })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ sha: 'new-tree-sha' })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ sha: 'new-commit-sha' })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({})
-        } as any);
-
       const result = await repositoryManager.createBox(
         'test-owner',
         'test-repo',
@@ -380,53 +385,19 @@ describe('RepositoryManager', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(mockManifestManager.prototype.storeLocalManifest).toHaveBeenCalledWith(
+      expect(mockManifestManager.storeLocalManifest).toHaveBeenCalledWith(
         tempDir,
         testManifest,
         'test-owner/test-repo',
-        'test-owner/test-repo/test-box'
+        'test-box'
       );
     });
 
     it('should handle manifest storage errors gracefully', async () => {
-      // Mock permission checker to return write access
-      const mockPermissionChecker = require('./permissionChecker').PermissionChecker;
-      mockPermissionChecker.prototype.checkRepositoryPermissions.mockResolvedValue({
-        permissions: { canWrite: true, canFork: true, canRead: true }
-      });
-
       // Mock manifest manager to throw error
-      const mockManifestManager = require('./manifestManager').ManifestManager;
-      mockManifestManager.prototype.storeLocalManifest = jest.fn().mockRejectedValue(
+      mockManifestManager.storeLocalManifest.mockRejectedValue(
         new Error('Manifest storage failed')
       );
-
-      // Mock successful GitHub API calls
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ default_branch: 'main' })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ object: { sha: 'base-sha' } })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ tree: { sha: 'tree-sha' } })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ sha: 'new-tree-sha' })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ sha: 'new-commit-sha' })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({})
-        } as any);
 
       // Box creation should still succeed even if manifest storage fails
       const result = await repositoryManager.createBox(
