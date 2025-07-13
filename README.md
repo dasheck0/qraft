@@ -32,12 +32,14 @@ Also: Have you ever tried to come up with a short, unique and fitting name for y
 
 - 🚀 **GitHub Integration** - Pull templates directly from GitHub repositories
 - 📦 **Template Boxes** - Organized collections of files with metadata
+- ✨ **Create & Update Workflow** - Create new boxes from local directories or update existing ones
 - 🔧 **Interactive Mode** - Browse and select templates with rich previews
 - 🏗️ **Registry Support** - Configure multiple template registries
 - 🔐 **Authentication** - Support for private repositories with GitHub tokens
 - 💾 **Local Caching** - Improved performance with intelligent caching
 - 🎯 **Target Directories** - Flexible file placement with overwrite protection
 - 🔍 **Box Discovery** - List and search available templates
+- 🔄 **Smart Detection** - Automatically detects existing boxes and switches to update workflow
 
 ## Installation
 
@@ -111,6 +113,31 @@ npx qraft copy readme --target ./docs
 npx qraft copy .tasks --force
 ```
 
+### Create a New Box from Local Directory
+```bash
+# Create a new box from current directory
+npx qraft create . my-awesome-box
+
+# Create with specific registry
+npx qraft create ./my-project my-box --registry mycompany/templates
+
+# Non-interactive mode (uses defaults)
+npx qraft create ./src/components ui-components --no-interactive
+```
+
+### Update an Existing Box
+When you run `qraft create` on a directory that already contains a `.qraft` directory with a manifest, qraft automatically detects this and switches to update mode:
+
+```bash
+# This will detect existing .qraft directory and update the box
+npx qraft create ./my-existing-box
+
+# The CLI will show:
+# 🔍 Checking for existing box...
+# 📦 Existing box detected!
+# 🔄 Switching to update workflow...
+```
+
 ### List Available Templates
 ```bash
 # List all available boxes
@@ -126,7 +153,84 @@ npx qraft list -i
 npx qraft copy n8n -i
 ```
 
+## The .qraft Directory
+
+When you create a box using `qraft create`, a `.qraft` directory is automatically created in your local directory. This directory contains:
+
+```
+.qraft/
+├── manifest.json    # Box metadata and configuration
+└── metadata.json    # Registry and sync information
+```
+
+### manifest.json
+Contains the box definition and metadata:
+```json
+{
+  "name": "my-awesome-box",
+  "version": "1.0.0",
+  "description": "My awesome project template",
+  "author": "Your Name",
+  "defaultTarget": "./my-awesome-box",
+  "tags": ["template", "project"],
+  "exclude": [".git", "node_modules", ".qraft"],
+  "remotePath": "templates/my-awesome-box"
+}
+```
+
+### metadata.json
+Contains registry and synchronization information:
+```json
+{
+  "sourceRegistry": "mycompany/templates",
+  "lastUpdated": "2025-01-13T15:30:00Z",
+  "version": "1.0.0"
+}
+```
+
+This approach allows qraft to:
+- **Track box state** - Know which boxes exist locally
+- **Smart updates** - Detect changes and suggest version increments
+- **Registry sync** - Maintain connection to source registry
+- **Conflict resolution** - Handle file changes intelligently
+
 ## Commands
+
+### `create <path> [box-name]`
+Create a new template box from a local directory or update an existing one.
+
+```bash
+qraft create <path> [box-name] [options]
+```
+
+**Arguments:**
+- `<path>` - Local directory path to create box from
+- `[box-name]` - Optional box name (defaults to directory name)
+
+**Options:**
+- `-r, --registry <registry>` - Target registry for the box
+- `--no-interactive` - Skip interactive prompts and use defaults
+- `--remote-path <path>` - Custom remote path in registry
+
+**Behavior:**
+- **New Box**: If no `.qraft` directory exists, creates a new box with interactive prompts
+- **Existing Box**: If `.qraft` directory exists, automatically switches to update workflow
+- **Update Workflow**: Prompts for version increment, description updates, and handles conflicts
+
+**Examples:**
+```bash
+# Create new box from current directory
+qraft create . my-project-template
+
+# Create from specific directory
+qraft create ./src/components ui-components
+
+# Create with custom registry and remote path
+qraft create ./docs documentation --registry mycompany/templates --remote-path docs/templates
+
+# Update existing box (when .qraft directory exists)
+qraft create ./my-existing-box  # Automatically detects and updates
+```
 
 ### `copy <box>`
 Copy a template box to your project.
@@ -147,6 +251,38 @@ qraft copy n8n
 qraft copy readme --target ./documentation
 qraft copy .tasks --force
 qraft copy myorg/custom-template --registry mycompany/templates
+```
+
+### `update <path>`
+Update an existing template box from a local directory.
+
+```bash
+qraft update <path> [options]
+```
+
+**Arguments:**
+- `<path>` - Local directory path containing `.qraft` directory
+
+**Options:**
+- `--no-interactive` - Skip interactive prompts and use defaults
+- `--version <version>` - Specify version instead of auto-increment
+
+**Features:**
+- **Smart Version Increment** - Suggests next patch version (1.0.0 → 1.0.1)
+- **Interactive Updates** - Prompts for description, author, and tag changes
+- **Conflict Detection** - Analyzes file changes and shows conflicts
+- **Registry Sync** - Updates box in the original registry
+
+**Examples:**
+```bash
+# Update existing box interactively
+qraft update ./my-box
+
+# Update with specific version
+qraft update ./my-box --version 2.0.0
+
+# Non-interactive update
+qraft update ./my-box --no-interactive
 ```
 
 ### `list`
@@ -289,6 +425,73 @@ Boxes can be referenced in several ways:
 - `registry/boxname` - Uses specific registry
 - `owner/repo/boxname` - Full GitHub path
 
+## Workflow Examples
+
+### Creating Your First Box
+
+1. **Prepare your template directory:**
+   ```bash
+   mkdir my-awesome-template
+   cd my-awesome-template
+   # Add your template files...
+   echo "# My Awesome Template" > README.md
+   echo "console.log('Hello World');" > index.js
+   ```
+
+2. **Create the box:**
+   ```bash
+   qraft create . my-awesome-template --registry mycompany/templates
+   ```
+
+3. **Interactive prompts will guide you:**
+   ```
+   📦 Creating Box from Local Directory
+   🎯 Interactive mode enabled
+
+   ✨ Box Name: my-awesome-template
+   📝 Description: [Enter description]
+   👤 Author: [Your name]
+   🏷️  Tags: [Enter tags separated by commas]
+   📍 Remote Path: templates/my-awesome-template
+
+   🔍 Analysis complete - 2 files will be uploaded
+   ✅ Proceed with creation? (y/N)
+   ```
+
+### Updating an Existing Box
+
+1. **Make changes to your template:**
+   ```bash
+   cd my-awesome-template
+   echo "# Updated documentation" >> README.md
+   echo "const version = '2.0.0';" > version.js
+   ```
+
+2. **Run create command (auto-detects existing box):**
+   ```bash
+   qraft create .
+   ```
+
+3. **Update workflow automatically starts:**
+   ```
+   🔍 Checking for existing box...
+   📦 Existing box detected!
+   🔄 Switching to update workflow...
+
+   📝 Current: my-awesome-template v1.0.0
+   🆕 Suggested: my-awesome-template v1.0.1
+
+   📝 Update description? (current: "My awesome template")
+   👤 Update author? (current: "Your Name")
+   🏷️  Update tags? (current: template, awesome)
+
+   📊 Changes detected:
+   ✏️  Modified: README.md
+   ➕ Added: version.js
+
+   ✅ Proceed with update? (y/N)
+   ```
+
 ## Global Options
 
 - `-v, --verbose` - Enable verbose output
@@ -322,6 +525,24 @@ If you can't connect to GitHub:
 1. Check internet connection
 2. Verify GitHub API access
 3. Check if behind corporate firewall
+
+### Box Creation/Update Issues
+
+#### "Manifest corrupted" error
+If you see this error when updating a box:
+1. Check that `.qraft/manifest.json` exists and is valid JSON
+2. Ensure all required fields are present (name, version, description, author)
+3. Recreate the box if manifest is severely corrupted: `rm -rf .qraft && qraft create .`
+
+#### "No default registry configured" error
+1. Set a default registry: `qraft config set defaultRegistry owner/repo`
+2. Or specify registry explicitly: `qraft create . box-name --registry owner/repo`
+
+#### Update workflow not triggered
+If `qraft create` doesn't detect your existing box:
+1. Ensure `.qraft` directory exists in the target directory
+2. Check that `.qraft/manifest.json` contains valid JSON
+3. Verify the manifest has required fields (name, version, etc.)
 
 ## Contributing
 
