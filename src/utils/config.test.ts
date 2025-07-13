@@ -1,3 +1,4 @@
+import * as fs from 'fs-extra';
 import { RegistryConfig } from '../types';
 import { ConfigManager } from './config';
 
@@ -6,10 +7,23 @@ describe('ConfigManager', () => {
   let configManager: ConfigManager;
   let tempConfigPath: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Use a temporary config path for testing
-    tempConfigPath = '/tmp/test-qraftrc';
+    tempConfigPath = `/tmp/test-qraftrc-${Date.now()}`;
+
+    // Ensure the temp config file doesn't exist
+    if (await fs.pathExists(tempConfigPath)) {
+      await fs.remove(tempConfigPath);
+    }
+
     configManager = new ConfigManager(tempConfigPath);
+  });
+
+  afterEach(async () => {
+    // Clean up temp config file
+    if (await fs.pathExists(tempConfigPath)) {
+      await fs.remove(tempConfigPath);
+    }
   });
 
   describe('constructor', () => {
@@ -27,11 +41,11 @@ describe('ConfigManager', () => {
     it('should create valid default configuration', async () => {
       const config = await configManager.getConfig();
 
-      expect(config.defaultRegistry).toBe('dasheck0');
+      expect(config.defaultRegistry).toBe('dasheck0/qraft-templates');
       expect(config.registries).toBeDefined();
-      expect(config.registries['dasheck0']).toBeDefined();
-      expect(config.registries['dasheck0'].repository).toBe('dasheck0/qraft-templates');
-      expect(config.registries['dasheck0'].isDefault).toBe(true);
+      expect(config.registries['dasheck0/qraft-templates']).toBeDefined();
+      expect(config.registries['dasheck0/qraft-templates'].repository).toBe('dasheck0/qraft-templates');
+      expect(config.registries['dasheck0/qraft-templates'].isDefault).toBe(true);
       expect(config.cache).toBeDefined();
       expect(config.cache?.enabled).toBe(true);
     });
@@ -86,7 +100,7 @@ describe('ConfigManager', () => {
       await configManager.setDefaultRegistry('test-default');
 
       // Now try to remove the old default - should work
-      await configManager.removeRegistry('dasheck0');
+      await configManager.removeRegistry('dasheck0/qraft-templates');
 
       // Try to remove current default registry - should fail
       await expect(configManager.removeRegistry('test-default'))
@@ -172,13 +186,13 @@ describe('ConfigManager', () => {
     it('should handle config reset', async () => {
       // Add some custom configuration
       await configManager.setGlobalToken('test-token');
-      
+
       // Reset to defaults
       await configManager.resetConfig();
-      
+
       const config = await configManager.getConfig();
       expect(config.globalToken).toBeUndefined();
-      expect(config.defaultRegistry).toBe('dasheck0');
+      expect(config.defaultRegistry).toBe('dasheck0/qraft-templates');
     });
   });
 });

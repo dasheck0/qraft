@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { BoxManifest, BoxReference, CacheEntry, RegistryManagerConfig } from '../types';
+import { ManifestManager } from './manifestManager';
 
 /**
  * CacheManager handles local caching of downloaded boxes for improved performance
@@ -10,11 +11,13 @@ export class CacheManager {
   private cacheDirectory: string;
   private ttl: number; // Time to live in seconds
   private enabled: boolean;
+  private manifestManager: ManifestManager;
 
   constructor(config: RegistryManagerConfig['cache']) {
     this.cacheDirectory = config?.directory || path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.cache', 'qraft');
     this.ttl = config?.ttl || 3600; // Default 1 hour
     this.enabled = config?.enabled !== false; // Default enabled
+    this.manifestManager = new ManifestManager();
   }
 
   /**
@@ -359,5 +362,141 @@ export class CacheManager {
    */
   getTTL(): number {
     return this.ttl;
+  }
+
+  /**
+   * Store manifest in cache directory for a box
+   * @param boxRef Box reference
+   * @param manifest Box manifest
+   * @param registry Registry identifier
+   * @param boxReference Full box reference
+   * @returns Promise<void>
+   */
+  async storeCachedManifest(
+    boxRef: BoxReference,
+    manifest: BoxManifest,
+    registry?: string,
+    boxReference?: string
+  ): Promise<void> {
+    if (!this.enabled) {
+      return;
+    }
+
+    try {
+      const cacheDir = this.getCacheDirectoryPath(boxRef);
+
+      // Only store manifest if cache directory exists (box is cached)
+      if (await fs.pathExists(cacheDir)) {
+        await this.manifestManager.storeLocalManifest(
+          cacheDir,
+          manifest,
+          registry,
+          boxReference
+        );
+      }
+    } catch (error) {
+      // Ignore manifest storage errors in cache
+    }
+  }
+
+  /**
+   * Get cached manifest for a box
+   * @param boxRef Box reference
+   * @returns Promise<any | null> Cached manifest or null
+   */
+  async getCachedManifest(boxRef: BoxReference): Promise<any | null> {
+    if (!this.enabled || !(await this.hasValidCache(boxRef))) {
+      return null;
+    }
+
+    try {
+      const cacheDir = this.getCacheDirectoryPath(boxRef);
+      return await this.manifestManager.getLocalManifest(cacheDir);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Check if cached manifest exists for a box
+   * @param boxRef Box reference
+   * @returns Promise<boolean> True if cached manifest exists
+   */
+  async hasCachedManifest(boxRef: BoxReference): Promise<boolean> {
+    if (!this.enabled || !(await this.hasValidCache(boxRef))) {
+      return false;
+    }
+
+    try {
+      const cacheDir = this.getCacheDirectoryPath(boxRef);
+      return await this.manifestManager.hasLocalManifest(cacheDir);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Sync cached manifest with remote manifest
+   * @param boxRef Box reference
+   * @param remoteManifest Remote manifest
+   * @param registry Registry identifier
+   * @param boxReference Full box reference
+   * @returns Promise<boolean> True if sync was needed and performed
+   */
+  async syncCachedManifest(
+    boxRef: BoxReference,
+    remoteManifest: BoxManifest,
+    registry?: string,
+    boxReference?: string
+  ): Promise<boolean> {
+    if (!this.enabled || !(await this.hasValidCache(boxRef))) {
+      return false;
+    }
+
+    try {
+      const cacheDir = this.getCacheDirectoryPath(boxRef);
+      const localManifest = await this.manifestManager.getLocalManifest(cacheDir);
+
+      if (!localManifest) {
+        // No local manifest, store the remote one
+        await this.manifestManager.storeLocalManifest(
+          cacheDir,
+          remoteManifest,
+          registry,
+          boxReference
+        );
+        return true;
+      }
+
+      // Compare manifests
+      const comparison = this.manifestManager.compareManifests(
+        localManifest.manifest,
+        remoteManifest
+      );
+
+      if (!comparison.isIdentical) {
+        // Manifests differ, update local copy
+        await this.manifestManager.storeLocalManifest(
+          cacheDir,
+          remoteManifest,
+          registry,
+          boxReference,
+          true // isUpdate
+        );
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Get manifest manager instance
+   * @returns ManifestManager Manifest manager instance
+   */
+  getManifestManager(): ManifestManager {
+    return this.manifestManager;
   }
 }

@@ -1,0 +1,345 @@
+export interface PullRequestOptions {
+  title?: string;
+  description?: string;
+  baseBranch?: string;
+  headBranch?: string;
+  draft?: boolean;
+  autoMerge?: boolean;
+  labels?: string[];
+  assignees?: string[];
+  reviewers?: string[];
+}
+
+export interface BoxMetadata {
+  name: string;
+  description?: string;
+  tags: string[];
+  fileCount: number;
+  size: string;
+}
+
+export interface PullRequestResult {
+  success: boolean;
+  prUrl: string;
+  prNumber: number;
+  title: string;
+  description: string;
+  message: string;
+  nextSteps: string[];
+}
+
+export class PullRequestCreator {
+  private readonly githubToken?: string | undefined;
+
+  constructor(githubToken?: string | undefined) {
+    this.githubToken = githubToken;
+  }
+
+  async createPullRequest(
+    owner: string,
+    repo: string,
+    boxMetadata: BoxMetadata,
+    options: PullRequestOptions = {}
+  ): Promise<PullRequestResult> {
+    try {
+      if (!this.githubToken) {
+        throw new Error('GitHub token required for creating pull requests');
+      }
+
+      const title = options.title || this.generateTitle(boxMetadata);
+      const description = options.description || this.generateDescription(boxMetadata);
+      const baseBranch = options.baseBranch || 'main';
+      const headBranch = options.headBranch || `add-${boxMetadata.name}-box`;
+
+      const prData = {
+        title,
+        body: description,
+        head: headBranch,
+        base: baseBranch,
+        draft: options.draft || false,
+        maintainer_can_modify: true
+      };
+
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${this.githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'qraft-cli',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(prData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json() as any;
+        throw new Error(`GitHub API error: ${errorData.message || response.statusText}`);
+      }
+
+      const data = await response.json() as any;
+
+      // Add labels if specified
+      if (options.labels && options.labels.length > 0) {
+        await this.addLabels(owner, repo, data.number, options.labels);
+      }
+
+      // Add assignees if specified
+      if (options.assignees && options.assignees.length > 0) {
+        await this.addAssignees(owner, repo, data.number, options.assignees);
+      }
+
+      // Request reviewers if specified
+      if (options.reviewers && options.reviewers.length > 0) {
+        await this.requestReviewers(owner, repo, data.number, options.reviewers);
+      }
+
+      return {
+        success: true,
+        prUrl: data.html_url,
+        prNumber: data.number,
+        title: data.title,
+        description: data.body,
+        message: 'Pull request created successfully',
+        nextSteps: [
+          'Review the pull request description',
+          'Wait for maintainer review and feedback',
+          'Address any requested changes',
+          'Monitor the PR for approval and merge'
+        ]
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        prUrl: '',
+        prNumber: 0,
+        title: '',
+        description: '',
+        message: `Failed to create pull request: ${error}`,
+        nextSteps: [
+          'Check your GitHub token permissions',
+          'Verify the repository exists and you have access',
+          'Ensure the branch exists and has commits',
+          'Try creating the PR manually through GitHub web interface'
+        ]
+      };
+    }
+  }
+
+  private generateTitle(boxMetadata: BoxMetadata): string {
+    const { name } = boxMetadata;
+    return `Add ${name} box`;
+  }
+
+  private generateDescription(boxMetadata: BoxMetadata): string {
+    const { name, description, tags, fileCount, size } = boxMetadata;
+
+    let desc = `## 📦 New Box: ${name}\n\n`;
+
+    if (description) {
+      desc += `${description}\n\n`;
+    }
+
+    desc += `### 📊 Box Details\n\n`;
+    desc += `- **Files**: ${fileCount} files\n`;
+    desc += `- **Size**: ${size}\n`;
+
+    if (tags.length > 0) {
+      desc += `- **Tags**: ${tags.join(', ')}\n`;
+    }
+    
+    desc += `\n### 🎯 Purpose\n\n`;
+    desc += `This box provides a template that can be used to quickly bootstrap new projects.\n\n`;
+    
+    desc += `### 🔍 What's Included\n\n`;
+    desc += `- Complete project structure\n`;
+    desc += `- Configuration files\n`;
+    desc += `- Example code and documentation\n`;
+    desc += `- Ready-to-use setup\n\n`;
+    
+    desc += `### 🚀 Usage\n\n`;
+    desc += `Once merged, users can create new projects using:\n`;
+    desc += `\`\`\`bash\n`;
+    desc += `qraft create my-project ${name}\n`;
+    desc += `\`\`\`\n\n`;
+    
+    desc += `---\n\n`;
+    desc += `*This pull request was automatically generated by qraft CLI*`;
+    
+    return desc;
+  }
+
+  private async addLabels(owner: string, repo: string, prNumber: number, labels: string[]): Promise<void> {
+    try {
+      await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${prNumber}/labels`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${this.githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'qraft-cli',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ labels })
+      });
+    } catch {
+      // Ignore label errors - not critical
+    }
+  }
+
+  private async addAssignees(owner: string, repo: string, prNumber: number, assignees: string[]): Promise<void> {
+    try {
+      await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${prNumber}/assignees`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${this.githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'qraft-cli',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ assignees })
+      });
+    } catch {
+      // Ignore assignee errors - not critical
+    }
+  }
+
+  private async requestReviewers(owner: string, repo: string, prNumber: number, reviewers: string[]): Promise<void> {
+    try {
+      await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/requested_reviewers`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${this.githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'qraft-cli',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reviewers })
+      });
+    } catch {
+      // Ignore reviewer errors - not critical
+    }
+  }
+
+  // Generate PR description for dry run
+  generatePRPreview(boxMetadata: BoxMetadata, options: PullRequestOptions = {}): {
+    title: string;
+    description: string;
+    baseBranch: string;
+    headBranch: string;
+  } {
+    const title = options.title || this.generateTitle(boxMetadata);
+    const description = options.description || this.generateDescription(boxMetadata);
+    const baseBranch = options.baseBranch || 'main';
+    const headBranch = options.headBranch || `add-${boxMetadata.name}-box`;
+
+    return {
+      title,
+      description,
+      baseBranch,
+      headBranch
+    };
+  }
+
+  // Check if a PR already exists for the box
+  async checkExistingPR(
+    owner: string,
+    repo: string,
+    boxName: string,
+    headBranch?: string
+  ): Promise<{ exists: boolean; prUrl?: string; prNumber?: number }> {
+    try {
+      if (!this.githubToken) {
+        return { exists: false };
+      }
+
+      const branch = headBranch || `add-${boxName}-box`;
+      const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/pulls?head=${branch}&state=open`,
+        {
+          headers: {
+            'Authorization': `token ${this.githubToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'qraft-cli'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json() as any[];
+        if (data.length > 0) {
+          return {
+            exists: true,
+            prUrl: data[0].html_url,
+            prNumber: data[0].number
+          };
+        }
+      }
+
+      return { exists: false };
+    } catch {
+      return { exists: false };
+    }
+  }
+
+  // Dry run method for testing
+  async createPullRequestDryRun(
+    owner: string,
+    repo: string,
+    boxMetadata: BoxMetadata,
+    options: PullRequestOptions = {}
+  ): Promise<PullRequestResult> {
+    const preview = this.generatePRPreview(boxMetadata, options);
+
+    return {
+      success: true,
+      prUrl: `https://github.com/${owner}/${repo}/pull/123`,
+      prNumber: 123,
+      title: preview.title,
+      description: preview.description,
+      message: '[DRY RUN] Pull request would be created successfully',
+      nextSteps: [
+        '[DRY RUN] Review the pull request description',
+        '[DRY RUN] Wait for maintainer review and feedback',
+        '[DRY RUN] Address any requested changes',
+        '[DRY RUN] Monitor the PR for approval and merge'
+      ]
+    };
+  }
+
+  // Validate PR options
+  validatePROptions(options: PullRequestOptions): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (options.title && options.title.length > 256) {
+      errors.push('Title must be 256 characters or less');
+    }
+
+    if (options.description && options.description.length > 65536) {
+      errors.push('Description must be 65536 characters or less');
+    }
+
+    if (options.labels) {
+      if (options.labels.length > 100) {
+        errors.push('Maximum 100 labels allowed');
+      }
+      for (const label of options.labels) {
+        if (label.length > 50) {
+          errors.push(`Label "${label}" must be 50 characters or less`);
+        }
+      }
+    }
+
+    if (options.assignees && options.assignees.length > 10) {
+      errors.push('Maximum 10 assignees allowed');
+    }
+
+    if (options.reviewers && options.reviewers.length > 15) {
+      errors.push('Maximum 15 reviewers allowed');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+}

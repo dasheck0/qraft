@@ -9,25 +9,25 @@
 export interface BoxManifest {
   /** Unique name of the box */
   name: string;
-  
+
   /** Human-readable description of what this box contains */
   description: string;
-  
+
   /** Author of the box */
   author: string;
-  
+
   /** Version of the box */
   version: string;
-  
+
   /** Optional default target directory when no --target is specified */
   defaultTarget?: string;
-  
+
+  /** Remote path in the registry where this box is stored */
+  remotePath?: string;
+
   /** Optional tags for categorization */
   tags?: string[];
-  
-  /** Optional usage notes or instructions */
-  usage?: string;
-  
+
   /** Files to exclude when copying (relative to box directory) */
   exclude?: string[];
 
@@ -81,12 +81,49 @@ export interface BoxOperationResult {
 export interface BoxInfo {
   /** The box manifest data */
   manifest: BoxManifest;
-  
+
   /** Absolute path to the box directory */
   path: string;
-  
+
   /** List of files in the box (excluding manifest.json) */
   files: string[];
+}
+
+/**
+ * Box registry entry for tracking name to remote path mappings
+ */
+export interface BoxRegistryEntry {
+  /** Remote path where the box is stored in the registry */
+  remotePath: string;
+
+  /** Last time this box was updated */
+  lastUpdated: string;
+
+  /** Current version of the box */
+  version: string;
+
+  /** Optional description for quick reference */
+  description?: string;
+}
+
+/**
+ * Box registry structure for tracking all boxes in a registry
+ */
+export interface BoxRegistry {
+  /** Registry metadata */
+  metadata: {
+    /** Registry name/identifier */
+    name: string;
+
+    /** Last time the registry was updated */
+    lastUpdated: string;
+
+    /** Registry format version */
+    version: string;
+  };
+
+  /** Map of box names to their registry entries */
+  boxes: Record<string, BoxRegistryEntry>;
 }
 
 /**

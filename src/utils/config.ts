@@ -80,10 +80,10 @@ export class ConfigManager {
    */
   private createDefaultConfig(): RegistryManagerConfig {
     return {
-      defaultRegistry: 'dasheck0',
+      defaultRegistry: 'dasheck0/qraft-templates',
       registries: {
-        'dasheck0': {
-          name: 'dasheck0',
+        'dasheck0/qraft-templates': {
+          name: 'dasheck0/qraft-templates',
           repository: 'dasheck0/qraft-templates',
           isDefault: true
         }
