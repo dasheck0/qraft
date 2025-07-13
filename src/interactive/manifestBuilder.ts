@@ -9,6 +9,8 @@ export interface ManifestBuilderOptions {
   suggestedAuthor?: string | undefined;
   suggestedTags?: string[] | undefined;
   defaultTarget?: string;
+  suggestedRemotePath?: string;
+  localPath?: string;
 }
 
 export class ManifestBuilder {
@@ -77,9 +79,20 @@ export class ManifestBuilder {
       },
       {
         type: 'input',
+        name: 'remotePath',
+        message: 'Remote path in registry:',
+        default: options.suggestedRemotePath || this.generateDefaultRemotePath(basicAnswers.name, options.localPath),
+        validate: (input: string) => {
+          if (!input.trim()) return 'Remote path is required';
+          if (!/^[a-zA-Z0-9/_-]+$/.test(input)) return 'Remote path must contain only letters, numbers, slashes, hyphens, and underscores';
+          return true;
+        }
+      },
+      {
+        type: 'input',
         name: 'defaultTarget',
         message: 'Default target directory:',
-        default: options.defaultTarget || './target',
+        default: options.defaultTarget || this.generateDefaultTarget(basicAnswers.name),
       }
     ]);
 
@@ -124,6 +137,7 @@ export class ManifestBuilder {
       author: basicAnswers.author,
       version: basicAnswers.version,
       defaultTarget: configAnswers.defaultTarget || './target',
+      remotePath: configAnswers.remotePath,
       tags: configAnswers.tags.length > 0 ? configAnswers.tags : undefined,
       exclude: advancedAnswers.exclude || undefined,
       postInstall: advancedAnswers.postInstall || undefined
@@ -193,7 +207,8 @@ export class ManifestBuilder {
         description: answers.description,
         author: options.suggestedAuthor || generatedMetadata.author || 'Unknown',
         version: generatedMetadata.version || '1.0.0',
-        defaultTarget: options.defaultTarget || './target'
+        defaultTarget: options.defaultTarget || './target',
+        remotePath: options.suggestedRemotePath || this.generateDefaultRemotePath(answers.name, options.localPath)
       };
 
       // Add optional properties only if they have values
@@ -207,7 +222,36 @@ export class ManifestBuilder {
     return this.buildManifest(generatedMetadata, options);
   }
 
+  /**
+   * Generate a default remote path based on box name and local path
+   * @param boxName Name of the box
+   * @param localPath Local path being boxed (optional)
+   * @returns string Default remote path
+   */
+  private generateDefaultRemotePath(boxName: string, localPath?: string): string {
+    if (localPath) {
+      // If local path is provided, use it as the remote path
+      // Convert absolute paths to relative and clean up
+      const relativePath = localPath.replace(/^\.\//, '').replace(/\/$/, '');
 
+      // If the path looks like a nested structure, use it
+      if (relativePath.includes('/')) {
+        return relativePath;
+      }
+    }
 
+    // Fall back to box name
+    return boxName;
+  }
 
+  /**
+   * Generate a default target directory based on box name
+   * @param boxName Name of the box
+   * @returns string Default target directory
+   */
+  private generateDefaultTarget(boxName: string): string {
+    // Extract the last part of the box name for the target
+    const targetName = boxName.includes('/') ? boxName.split('/').pop() : boxName;
+    return `./${targetName}`;
+  }
 }

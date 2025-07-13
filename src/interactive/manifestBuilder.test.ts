@@ -60,6 +60,7 @@ describe('ManifestBuilder', () => {
         author: 'Test Author',
         version: '1.0.0',
         defaultTarget: './target',
+        remotePath: 'my-box',
         tags: ['test', 'example']
       });
     });

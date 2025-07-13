@@ -60,10 +60,10 @@
   - [x] 4.6 Add `.qraft/` to default exclude patterns to prevent recursive boxing
   - [x] 4.7 Update existing box operation tests and add new tests for manifest synchronization
 
-- [ ] 5.0 Enhance Change Analysis with Manifest Considerations
-  - [ ] 5.1 Extend ChangeAnalysis class to include manifest-level changes in overall risk assessment
-  - [ ] 5.2 Add manifest change detection to FileChangeAnalysis for version, metadata changes
-  - [ ] 5.3 Implement manifest change impact calculation (critical for version changes, medium for metadata)
-  - [ ] 5.4 Update change analysis recommendations to include manifest-specific guidance
-  - [ ] 5.5 Add manifest change statistics to ChangeAnalysisResult summary
-  - [ ] 5.6 Write tests for manifest change analysis scenarios and risk level calculations
+- [x] 5.0 Enhance Change Analysis with Manifest Considerations
+  - [x] 5.1 Extend ChangeAnalysis class to include manifest-level changes in overall risk assessment
+  - [x] 5.2 Add manifest change detection to FileChangeAnalysis for version, metadata changes
+  - [x] 5.3 Implement manifest change impact calculation (critical for version changes, medium for metadata)
+  - [x] 5.4 Update change analysis recommendations to include manifest-specific guidance
+  - [x] 5.5 Add manifest change statistics to ChangeAnalysisResult summary
+  - [x] 5.6 Write tests for manifest change analysis scenarios and risk level calculations

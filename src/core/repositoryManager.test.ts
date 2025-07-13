@@ -258,6 +258,7 @@ describe('RepositoryManager', () => {
         'test-box',
         tempDir,
         testManifest,
+        undefined, // remotePath
         { createPR: true }
       );
 

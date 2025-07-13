@@ -2,6 +2,7 @@ import { Octokit } from '@octokit/rest';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { BoxManifest } from '../types';
+import { BoxRegistryManager } from './boxRegistryManager';
 import { ManifestManager } from './manifestManager';
 import { PermissionChecker } from './permissionChecker';
 import { BoxMetadata, PullRequestCreator } from './pullRequestCreator';
@@ -37,6 +38,7 @@ export class RepositoryManager {
   private readonly repositoryForker: RepositoryForker;
   private readonly pullRequestCreator: PullRequestCreator;
   private readonly manifestManager: ManifestManager;
+  private readonly boxRegistryManager: BoxRegistryManager;
 
   constructor(githubToken?: string | undefined) {
     this.githubToken = githubToken;
@@ -44,6 +46,7 @@ export class RepositoryManager {
     this.repositoryForker = new RepositoryForker(githubToken);
     this.pullRequestCreator = new PullRequestCreator(githubToken);
     this.manifestManager = new ManifestManager();
+    this.boxRegistryManager = new BoxRegistryManager();
   }
 
   /**
@@ -55,6 +58,7 @@ export class RepositoryManager {
     boxName: string,
     localPath: string,
     manifest: BoxManifest,
+    remotePath?: string,
     options: CreateBoxOptions = {}
   ): Promise<CreateBoxResult> {
     try {
@@ -85,12 +89,13 @@ export class RepositoryManager {
           boxName,
           localPath,
           manifest,
-          { ...options, createPR: true }
+          { ...options, createPR: true },
+          remotePath
         );
       }
 
       // User has write access, create directly
-      return this.createBoxInRepository(owner, repo, boxName, localPath, manifest, options);
+      return this.createBoxInRepository(owner, repo, boxName, localPath, manifest, options, remotePath);
 
     } catch (error) {
       return {
@@ -115,14 +120,21 @@ export class RepositoryManager {
     boxName: string,
     localPath: string,
     manifest: BoxManifest,
-    options: CreateBoxOptions
+    options: CreateBoxOptions = {},
+    remotePath?: string
   ): Promise<CreateBoxResult> {
     const octokit = new Octokit({
       auth: this.githubToken,
       userAgent: 'qraft-cli'
     });
 
-    const boxPath = boxName;
+    // Use remotePath if provided, otherwise fall back to boxName
+    const boxPath = remotePath || boxName;
+
+    // Update manifest with remotePath if provided
+    if (remotePath) {
+      manifest.remotePath = remotePath;
+    }
 
     try {
       // Get the default branch if no branch specified
@@ -200,6 +212,23 @@ export class RepositoryManager {
       } catch (manifestError) {
         // Log manifest storage error but don't fail the entire operation
         console.warn(`Warning: Failed to store local manifest copy: ${manifestError instanceof Error ? manifestError.message : 'Unknown error'}`);
+      }
+
+      // Update box registry with name → remote path mapping
+      try {
+        // For now, we'll use a local registry path. In a real implementation,
+        // this would be the cloned registry directory
+        const registryPath = process.cwd(); // Temporary - should be actual registry path
+        await this.boxRegistryManager.registerBox(
+          registryPath,
+          `${owner}/${repo}`,
+          boxName,
+          boxPath,
+          manifest
+        );
+      } catch (registryError) {
+        // Log registry update error but don't fail the entire operation
+        console.warn(`Warning: Failed to update box registry: ${registryError instanceof Error ? registryError.message : 'Unknown error'}`);
       }
 
       const result: CreateBoxResult = {

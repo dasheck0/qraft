@@ -1,7 +1,15 @@
 # cli 
+- how do I specify the remote location of a box?
 - generate a box repo (with boilerplate)
 - create box from directory
+- delete boxes
 - templating
+- login in github and store token in background
+- download manifest into direcctory when creating / updating
+- autocomplete cli
+- upadte all boxes in current local directory recursively 
+- download mianfest.json also wehn downloading box
+- update commit message when box is updated to follow conventional commits
 
 # general
 - create logo

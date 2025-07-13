@@ -146,7 +146,9 @@ export async function createCommand(
       suggestedDescription: generatedMetadata.description,
       suggestedAuthor: generatedMetadata.author || undefined,
       suggestedTags: generatedMetadata.tags || undefined,
-      defaultTarget: './target'
+      defaultTarget: './target',
+      suggestedRemotePath: localPath, // Use local path as suggested remote path
+      localPath: localPath
     };
 
     const manifest = options.interactive === false
@@ -183,6 +185,7 @@ export async function createCommand(
       manifest.name,
       localPath,
       manifest,
+      manifest.remotePath, // Use remotePath from manifest
       {
         commitMessage: `Add ${manifest.name} box - ${manifest.description}`,
         createPR: true

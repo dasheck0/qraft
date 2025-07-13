@@ -28,7 +28,7 @@ describe('ChangeAnalysis', () => {
     ...overrides
   });
 
-  const createMockDirectoryComparison = (files: FileComparison[]): DirectoryComparison => ({
+  const createMockDirectoryComparison = (files: FileComparison[], overrides: any = {}): DirectoryComparison => ({
     files,
     summary: {
       added: files.filter(f => f.status === 'added').length,
@@ -38,7 +38,8 @@ describe('ChangeAnalysis', () => {
       totalOld: files.length,
       totalNew: files.length
     },
-    conflicts: []
+    conflicts: [],
+    ...overrides
   });
 
   const createMockDiffSummary = (files: FileDiff[]): DiffSummary => ({
@@ -364,6 +365,179 @@ describe('ChangeAnalysis', () => {
 
       expect(safeFiles).toHaveLength(1);
       expect(safeFiles[0].path).toBe('simple.js');
+    });
+  });
+
+  describe('manifest analysis', () => {
+    const createMockManifestComparison = (overrides: any = {}) => ({
+      hasLocalManifest: true,
+      hasRemoteManifest: true,
+      manifestComparison: {
+        isIdentical: false,
+        differences: [
+          { field: 'version', oldValue: '1.0.0', newValue: '2.0.0' }
+        ]
+      },
+      manifestConflicts: [],
+      manifestSummary: {
+        status: 'updated',
+        riskLevel: 'medium',
+        requiresReview: true
+      },
+      ...overrides
+    });
+
+    it('should analyze manifest version changes', () => {
+      const comparisons = [
+        createMockComparison({
+          path: 'simple.js',
+          status: 'modified',
+          oldFile: createMockFile({ size: 100 }),
+          newFile: createMockFile({ size: 120 })
+        })
+      ];
+
+      const directoryComparison = createMockDirectoryComparison(comparisons, {
+        manifest: createMockManifestComparison()
+      });
+
+      const diffSummary = createMockDiffSummary([
+        createMockFileDiff({ path: 'simple.js', status: 'modified' })
+      ]);
+
+      const result = changeAnalysis.analyzeChanges(directoryComparison, diffSummary);
+
+      expect(result.manifestAnalysis).toBeDefined();
+      expect(result.manifestAnalysis!.hasChanges).toBe(true);
+      expect(result.manifestAnalysis!.changeType).toBe('version');
+      expect(result.manifestAnalysis!.riskFactors).toContain('Version change detected');
+      expect(result.summary.manifestChanges).toBe(1);
+    });
+
+    it('should analyze major version changes with high impact', () => {
+      const manifestComparison = createMockManifestComparison({
+        manifestComparison: {
+          isIdentical: false,
+          differences: [
+            { field: 'version', oldValue: '1.5.0', newValue: '2.0.0' }
+          ]
+        }
+      });
+
+      const directoryComparison = createMockDirectoryComparison([], {
+        manifest: manifestComparison
+      });
+
+      const diffSummary = createMockDiffSummary([]);
+
+      const result = changeAnalysis.analyzeChanges(directoryComparison, diffSummary);
+
+      expect(result.manifestAnalysis!.riskFactors).toContain('Major version change');
+      expect(result.manifestAnalysis!.impact.level).toBe('high');
+      expect(result.manifestAnalysis!.changes.versionChange).toBeDefined();
+      expect(result.manifestAnalysis!.changes.versionChange!.isMajorChange).toBe(true);
+    });
+
+    it('should analyze metadata changes', () => {
+      const manifestComparison = createMockManifestComparison({
+        manifestComparison: {
+          isIdentical: false,
+          differences: [
+            { field: 'name', oldValue: 'old-box', newValue: 'new-box' },
+            { field: 'description', oldValue: 'Old desc', newValue: 'New desc' }
+          ]
+        }
+      });
+
+      const directoryComparison = createMockDirectoryComparison([], {
+        manifest: manifestComparison
+      });
+
+      const diffSummary = createMockDiffSummary([]);
+
+      const result = changeAnalysis.analyzeChanges(directoryComparison, diffSummary);
+
+      expect(result.manifestAnalysis!.changeType).toBe('metadata');
+      expect(result.manifestAnalysis!.riskFactors).toContain('Box name changed');
+      expect(result.manifestAnalysis!.impact.level).toBe('high');
+      expect(result.manifestAnalysis!.changes.metadataChanges).toHaveLength(2);
+    });
+
+    it('should handle no manifest changes', () => {
+      const manifestComparison = createMockManifestComparison({
+        manifestComparison: {
+          isIdentical: true,
+          differences: []
+        }
+      });
+
+      const directoryComparison = createMockDirectoryComparison([], {
+        manifest: manifestComparison
+      });
+
+      const diffSummary = createMockDiffSummary([]);
+
+      const result = changeAnalysis.analyzeChanges(directoryComparison, diffSummary);
+
+      expect(result.manifestAnalysis!.hasChanges).toBe(false);
+      expect(result.manifestAnalysis!.changeType).toBe('none');
+      expect(result.summary.manifestChanges).toBe(0);
+    });
+
+    it('should handle missing manifest comparison', () => {
+      const directoryComparison = createMockDirectoryComparison([]);
+      const diffSummary = createMockDiffSummary([]);
+
+      const result = changeAnalysis.analyzeChanges(directoryComparison, diffSummary);
+
+      expect(result.manifestAnalysis).toBeUndefined();
+      expect(result.summary.manifestChanges).toBe(0);
+    });
+
+    it('should include manifest recommendations in overall recommendations', () => {
+      const manifestComparison = createMockManifestComparison({
+        manifestComparison: {
+          isIdentical: false,
+          differences: [
+            { field: 'version', oldValue: '1.0.0', newValue: '2.0.0' }
+          ]
+        }
+      });
+
+      const directoryComparison = createMockDirectoryComparison([], {
+        manifest: manifestComparison
+      });
+
+      const diffSummary = createMockDiffSummary([]);
+
+      const result = changeAnalysis.analyzeChanges(directoryComparison, diffSummary);
+
+      expect(result.recommendations).toContain('📋 MANIFEST CHANGES DETECTED:');
+      expect(result.recommendations.some(r => r.includes('Major version change'))).toBe(true);
+    });
+
+    it('should factor manifest changes into overall risk calculation', () => {
+      const manifestComparison = createMockManifestComparison({
+        manifestComparison: {
+          isIdentical: false,
+          differences: [
+            { field: 'version', oldValue: '1.0.0', newValue: '2.0.0' }
+          ]
+        }
+      });
+
+      const directoryComparison = createMockDirectoryComparison([], {
+        manifest: manifestComparison
+      });
+
+      const diffSummary = createMockDiffSummary([]);
+
+      const result = changeAnalysis.analyzeChanges(directoryComparison, diffSummary);
+
+      // High-impact manifest changes should elevate overall risk
+      expect(result.overall.riskLevel).toBe('high');
+      expect(result.overall.requiresReview).toBe(true);
+      expect(result.overall.canAutoApply).toBe(false);
     });
   });
 });

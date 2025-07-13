@@ -47,7 +47,8 @@ describe('ConflictResolution', () => {
       additions: fileAnalyses.filter(f => f.changeType === 'addition').length,
       deletions: fileAnalyses.filter(f => f.changeType === 'deletion').length,
       modifications: fileAnalyses.filter(f => f.changeType === 'modification').length,
-      renames: 0
+      renames: 0,
+      manifestChanges: 0
     },
     impacts: [],
     fileAnalyses,
