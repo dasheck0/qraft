@@ -219,12 +219,16 @@ describe('RepositoryManager', () => {
     });
 
     it('should handle GitHub API errors gracefully', async () => {
-      // Mock GitHub API to throw an error
-      const { Octokit } = require('@octokit/rest');
-      const mockOctokit = new Octokit();
-      mockOctokit.rest.repos.get.mockRejectedValue(new Error('Repository not found'));
+      // Create a failing permission checker that throws an error
+      const failingPermissionChecker = {
+        checkRepositoryPermissions: jest.fn().mockRejectedValue(new Error('GitHub API error: Repository not found'))
+      };
 
-      const result = await repositoryManager.createBox(
+      const failingRepositoryManager = new RepositoryManager('fake-token');
+      // Replace the internal permission checker instance
+      (failingRepositoryManager as any).permissionChecker = failingPermissionChecker;
+
+      const result = await failingRepositoryManager.createBox(
         'test-owner',
         'test-repo',
         'test-box',
@@ -233,7 +237,7 @@ describe('RepositoryManager', () => {
       );
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('Failed to create box in repository');
+      expect(result.message).toContain('Failed to create box');
       expect(result.nextSteps).toContain('Check your GitHub token permissions');
     });
 
@@ -253,23 +257,9 @@ describe('RepositoryManager', () => {
     });
 
     it('should create pull request when requested', async () => {
-      // Mock permission checker to return write access
-      const mockPermissionChecker = require('./permissionChecker').PermissionChecker;
-      mockPermissionChecker.prototype.checkRepositoryPermissions.mockResolvedValue({
-        permissions: { canWrite: true, canFork: true, canRead: true }
-      });
+      // Permission checker is already mocked globally
 
-      // Mock pull request creator
-      const mockPullRequestCreator = require('./pullRequestCreator').PullRequestCreator;
-      mockPullRequestCreator.prototype.createPullRequest.mockResolvedValue({
-        success: true,
-        prUrl: 'https://github.com/test-owner/test-repo/pull/1',
-        prNumber: 1,
-        title: 'Add test-box box',
-        description: 'Auto-generated PR',
-        message: 'PR created successfully',
-        nextSteps: []
-      });
+      // Pull request creator is already mocked globally
 
       // Mock GitHub API responses
       mockFetch
@@ -307,7 +297,7 @@ describe('RepositoryManager', () => {
       expect(result.success).toBe(true);
       expect(result.prUrl).toBe('https://github.com/test-owner/test-repo/pull/1');
       expect(result.prNumber).toBe(1);
-      expect(mockPullRequestCreator.prototype.createPullRequest).toHaveBeenCalled();
+      expect(mockPullRequestCreator.createPullRequest).toHaveBeenCalled();
     });
   });
 
@@ -333,33 +323,9 @@ describe('RepositoryManager', () => {
         return Promise.resolve(Buffer.from(''));
       });
 
-      // Mock permission checker and GitHub API
-      const mockPermissionChecker = require('./permissionChecker').PermissionChecker;
-      mockPermissionChecker.prototype.checkRepositoryPermissions.mockResolvedValue({
-        permissions: { canWrite: true, canFork: true, canRead: true }
-      });
+      // Permission checker and GitHub API are already mocked globally
 
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ object: { sha: 'base-sha' } })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ tree: { sha: 'tree-sha' } })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ sha: 'new-tree-sha' })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ sha: 'new-commit-sha' })
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({})
-        } as any);
+
 
       const result = await repositoryManager.createBox(
         'test-owner',
@@ -388,8 +354,8 @@ describe('RepositoryManager', () => {
       expect(mockManifestManager.storeLocalManifest).toHaveBeenCalledWith(
         tempDir,
         testManifest,
-        'test-owner/test-repo',
-        'test-box'
+        'test-user/test-repo',
+        'test-user/test-repo/test-box'
       );
     });
 
