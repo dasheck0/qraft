@@ -72,7 +72,7 @@ dasheck0/qraft-templates/
     ├── .tasks/
 ```
 
-Each directory serves as remote `box` that can be `qraftd` into your current directory. Each `box` must contain a `manifest.json` file with the following structure:
+Each directory serves as remote `box` that can be copied into your current directory. Each `box` must contain a `.qraft` directory with a `manifest.json` file with the following structure:
 ```json
 {
   "name": "n8n",
@@ -251,38 +251,6 @@ qraft copy n8n
 qraft copy readme --target ./documentation
 qraft copy .tasks --force
 qraft copy myorg/custom-template --registry mycompany/templates
-```
-
-### `update <path>`
-Update an existing template box from a local directory.
-
-```bash
-qraft update <path> [options]
-```
-
-**Arguments:**
-- `<path>` - Local directory path containing `.qraft` directory
-
-**Options:**
-- `--no-interactive` - Skip interactive prompts and use defaults
-- `--version <version>` - Specify version instead of auto-increment
-
-**Features:**
-- **Smart Version Increment** - Suggests next patch version (1.0.0 → 1.0.1)
-- **Interactive Updates** - Prompts for description, author, and tag changes
-- **Conflict Detection** - Analyzes file changes and shows conflicts
-- **Registry Sync** - Updates box in the original registry
-
-**Examples:**
-```bash
-# Update existing box interactively
-qraft update ./my-box
-
-# Update with specific version
-qraft update ./my-box --version 2.0.0
-
-# Non-interactive update
-qraft update ./my-box --no-interactive
 ```
 
 ### `list`
