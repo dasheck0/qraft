@@ -41,18 +41,21 @@ export interface BoxManifest {
 export interface BoxOperationConfig {
   /** Name of the box to operate on */
   boxName: string;
-  
+
   /** Target directory where files should be copied */
   targetDirectory: string;
-  
+
   /** Whether to force overwrite existing files */
   force: boolean;
-  
+
   /** Whether to run in interactive mode */
   interactive: boolean;
-  
+
   /** Source directory containing all boxes */
   boxesDirectory: string;
+
+  /** Whether to skip creating .qraft directory (no sync tracking) */
+  noSync?: boolean;
 }
 
 /**

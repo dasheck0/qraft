@@ -58,6 +58,7 @@ program
   .option('-f, --force', 'force overwrite existing files')
   .option('-r, --registry <registry>', 'use specific registry')
   .option('-i, --interactive', 'interactive mode with prompts')
+  .option('-n, --no-sync', 'skip creating .qraft directory (no sync tracking)')
   .action(async (boxName, options) => {
     try {
       await copyCommand(boxManager, boxName, options);

@@ -10,6 +10,7 @@ interface CopyOptions {
   force?: boolean;
   registry?: string;
   interactive?: boolean;
+  noSync?: boolean;
 }
 
 export async function copyCommand(
