@@ -201,12 +201,14 @@ export class BoxManager {
       // Download and copy files
       const results = await this.downloadAndCopyFiles(boxRef, boxInfo, resolvedTargetDir, config.force);
 
-      // Store manifest locally after successful file operations
-      try {
-        await this.storeManifestLocally(boxRef, boxInfo, resolvedTargetDir);
-      } catch (manifestError) {
-        // Log manifest storage error but don't fail the entire operation
-        console.warn(`Warning: Failed to store manifest locally: ${manifestError instanceof Error ? manifestError.message : 'Unknown error'}`);
+      // Store manifest locally after successful file operations (unless noSync is enabled)
+      if (!config.noSync) {
+        try {
+          await this.storeManifestLocally(boxRef, boxInfo, resolvedTargetDir);
+        } catch (manifestError) {
+          // Log manifest storage error but don't fail the entire operation
+          console.warn(`Warning: Failed to store manifest locally: ${manifestError instanceof Error ? manifestError.message : 'Unknown error'}`);
+        }
       }
 
       // Analyze results
@@ -355,20 +357,23 @@ export class BoxManager {
    * @param targetDirectory Target directory (optional)
    * @param force Whether to force overwrite existing files
    * @param overrideRegistry Optional registry to override the parsed registry
+   * @param noSync Whether to skip creating .qraft directory (no sync tracking)
    * @returns Promise<BoxOperationResult> Result of the operation
    */
   async copyBoxByName(
     boxName: string,
     targetDirectory?: string,
     force: boolean = false,
-    overrideRegistry?: string
+    overrideRegistry?: string,
+    noSync: boolean = false
   ): Promise<BoxOperationResult> {
     const config: BoxOperationConfig = {
       boxName,
       targetDirectory: targetDirectory ?? process.cwd(),
       force,
       interactive: false,
-      boxesDirectory: '' // Not used in GitHub mode
+      boxesDirectory: '', // Not used in GitHub mode
+      noSync
     };
 
     return this.copyBox(config, overrideRegistry);

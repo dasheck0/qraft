@@ -20,16 +20,16 @@
 
 ## Tasks
 
-- [ ] 1.0 Update CLI Interface and Type Definitions
+- [x] 1.0 Update CLI Interface and Type Definitions
   - [x] 1.1 Add --no-sync flag (with -n alias) to copy command in src/cli.ts
   - [x] 1.2 Update CopyOptions interface in src/commands/copy.ts to include noSync property
   - [x] 1.3 Update BoxOperationConfig interface in src/types.ts to include optional noSync property
   - [x] 1.4 Update command description and help text to document the new flag
 - [ ] 2.0 Implement Core Logic Changes in BoxManager
-  - [ ] 2.1 Modify BoxManager.copyBox() method to accept noSync parameter
-  - [ ] 2.2 Add conditional logic to skip storeManifestLocally() when noSync is true
-  - [ ] 2.3 Ensure file copying functionality works identically regardless of sync setting
-  - [ ] 2.4 Update copyBoxByName() method to support noSync parameter
+  - [x] 2.1 Modify BoxManager.copyBox() method to accept noSync parameter
+  - [x] 2.2 Add conditional logic to skip storeManifestLocally() when noSync is true
+  - [x] 2.3 Ensure file copying functionality works identically regardless of sync setting
+  - [x] 2.4 Update copyBoxByName() method to support noSync parameter
 - [ ] 3.0 Update Copy Command Handler
   - [ ] 3.1 Pass noSync option from CLI to BoxManager in copy command
   - [ ] 3.2 Update non-interactive copy workflow to handle noSync flag
