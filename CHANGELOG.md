@@ -28,6 +28,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+
+## [1.1.1] - 2025-07-22
+
+### Added
+- update output messages to indicate sync tracking status
+- enhance interactive mode with sync preference prompts and --no-sync support
+- update copy command handler to pass noSync option to BoxManager
+- implement core BoxManager logic for --no-sync functionality
+- add --no-sync flag to copy command CLI interface and types
+
+### Maintenance
+- update task list
+
 ## [1.1.0] - 2025-07-13
 
 ### Added
