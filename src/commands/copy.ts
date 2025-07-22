@@ -124,7 +124,8 @@ export async function copyCommand(
       targetDirectory,
       force: options.force || false,
       interactive: options.interactive || false,
-      boxesDirectory: '' // Not used for GitHub mode
+      boxesDirectory: '', // Not used for GitHub mode
+      noSync: options.noSync || false
     };
     
     // Show progress
