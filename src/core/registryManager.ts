@@ -1,10 +1,10 @@
 import { Octokit } from '@octokit/rest';
 import {
-  BoxInfo,
-  BoxManifest,
-  BoxReference,
-  RegistryConfig,
-  RegistryManagerConfig
+    BoxInfo,
+    BoxManifest,
+    BoxReference,
+    RegistryConfig,
+    RegistryManagerConfig
 } from '../types';
 
 /**
@@ -20,7 +20,7 @@ export class RegistryManager {
 
   /**
    * Parse a box reference string into registry and box name components
-   * @param reference Box reference (e.g., "n8n", "myorg/n8n", "myorg/templates/n8n")
+   * @param reference Box reference (e.g., "n8n", "myorg/n8n", "aws/lambda")
    * @param overrideRegistry Optional registry to override the parsed registry
    * @returns BoxReference Parsed reference information
    */
@@ -29,18 +29,38 @@ export class RegistryManager {
     let registry: string;
     let boxName: string;
 
-    if (parts.length === 1) {
-      // Simple box name, use override registry or default registry
-      registry = overrideRegistry || this.config.defaultRegistry;
+    if (overrideRegistry) {
+      // If override registry is provided, use it and treat entire reference as box name
+      registry = overrideRegistry;
+      boxName = reference;
+    } else if (parts.length === 1) {
+      // Simple box name, use default registry
+      registry = this.config.defaultRegistry;
       boxName = parts[0];
     } else if (parts.length === 2) {
-      // Registry/boxName format
-      registry = overrideRegistry || parts[0];
-      boxName = parts[1];
+      // Could be either "registry/box" or "nested/box" format
+      // First, check if the first part is a configured registry
+      if (this.config.registries[parts[0]]) {
+        // It's a registry/box format
+        registry = parts[0];
+        boxName = parts[1];
+      } else {
+        // Treat as nested box path in default registry
+        registry = this.config.defaultRegistry;
+        boxName = reference; // Keep the full path as box name
+      }
     } else {
-      // Assume last part is box name, everything before is registry
-      boxName = parts[parts.length - 1];
-      registry = overrideRegistry || parts.slice(0, -1).join('/');
+      // Multiple parts - could be "registry/nested/box" or just "nested/path/box"
+      // Check if the first part is a configured registry
+      if (this.config.registries[parts[0]]) {
+        // It's a registry with nested path
+        registry = parts[0];
+        boxName = parts.slice(1).join('/');
+      } else {
+        // Treat entire path as nested box in default registry
+        registry = this.config.defaultRegistry;
+        boxName = reference;
+      }
     }
 
     // Validate that the registry exists in configuration
@@ -207,6 +227,73 @@ export class RegistryManager {
   }
 
   /**
+   * Recursively discover all boxes in a repository
+   * @param octokit GitHub API instance
+   * @param owner Repository owner
+   * @param repo Repository name
+   * @param path Current path to search (default: '')
+   * @param maxDepth Maximum recursion depth (default: 5)
+   * @returns Promise<string[]> Array of box paths
+   */
+  private async discoverBoxesRecursively(
+    octokit: any,
+    owner: string,
+    repo: string,
+    path: string = '',
+    maxDepth: number = 5
+  ): Promise<string[]> {
+    if (maxDepth <= 0) {
+      return [];
+    }
+
+    const boxes: string[] = [];
+
+    try {
+      const { data } = await octokit.rest.repos.getContent({
+        owner,
+        repo,
+        path
+      });
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      for (const item of data) {
+        if (item.type === 'dir') {
+          const itemPath = path ? `${path}/${item.name}` : item.name;
+
+          try {
+            // Check if this directory contains manifest.json
+            await octokit.rest.repos.getContent({
+              owner,
+              repo,
+              path: `${itemPath}/manifest.json`
+            });
+            // If we get here, manifest.json exists - this is a box
+            boxes.push(itemPath);
+          } catch (error) {
+            // No manifest.json in this directory, continue searching recursively
+            const nestedBoxes = await this.discoverBoxesRecursively(
+              octokit,
+              owner,
+              repo,
+              itemPath,
+              maxDepth - 1
+            );
+            boxes.push(...nestedBoxes);
+          }
+        }
+      }
+    } catch (error) {
+      // If we can't read this directory, skip it
+      return [];
+    }
+
+    return boxes;
+  }
+
+  /**
    * List all boxes available in a registry
    * @param registryName Name of the registry (optional, uses default if not provided)
    * @returns Promise<string[]> Array of box names
@@ -214,7 +301,7 @@ export class RegistryManager {
   async listBoxes(registryName?: string): Promise<string[]> {
     const registry = registryName || this.config.defaultRegistry;
     const registryConfig = this.config.registries[registry];
-    
+
     if (!registryConfig) {
       throw new Error(`Registry '${registry}' not found`);
     }
@@ -223,34 +310,8 @@ export class RegistryManager {
       const octokit = await this.getOctokitInstance(registry);
       const [owner, repo] = registryConfig.repository.split('/');
 
-      const { data } = await octokit.rest.repos.getContent({
-        owner,
-        repo,
-        path: ''
-      });
-
-      if (!Array.isArray(data)) {
-        return [];
-      }
-
-      // Filter for directories that contain manifest.json
-      const boxes: string[] = [];
-      for (const item of data) {
-        if (item.type === 'dir') {
-          try {
-            // Check if manifest.json exists in this directory
-            await octokit.rest.repos.getContent({
-              owner,
-              repo,
-              path: `${item.name}/manifest.json`
-            });
-            boxes.push(item.name);
-          } catch (error) {
-            // Directory doesn't contain manifest.json, skip it
-            continue;
-          }
-        }
-      }
+      // Use recursive discovery to find all boxes
+      const boxes = await this.discoverBoxesRecursively(octokit, owner, repo);
 
       return boxes.sort();
     } catch (error) {

@@ -82,9 +82,9 @@ export class BoxManager {
       const boxes: BoxInfo[] = [];
 
       for (const boxName of boxNames) {
-        const boxRef = await this.parseBoxReference(
-          registryName ? `${registryName}/${boxName}` : boxName
-        );
+        // Parse box reference with explicit registry override to avoid confusion
+        // between nested paths and registry names
+        const boxRef = await this.parseBoxReference(boxName, registryName);
         const boxInfo = await this.getBoxInfo(boxRef);
         if (boxInfo) {
           boxes.push(boxInfo);

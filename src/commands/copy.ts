@@ -36,9 +36,6 @@ export async function copyCommand(
       return;
     }
 
-    console.log(options);
-
-
     // Non-interactive mode (existing logic)
     // Parse box reference to validate it exists
     const boxRef = await boxManager.parseBoxReference(boxName, options.registry);
