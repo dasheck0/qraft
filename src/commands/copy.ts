@@ -126,7 +126,7 @@ export async function copyCommand(
       force: options.force || false,
       interactive: options.interactive || false,
       boxesDirectory: '', // Not used for GitHub mode
-      noSync: options.noSync || false
+      noSync: options.noSync ?? false
     };
     
     // Show progress
