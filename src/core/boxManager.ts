@@ -1,10 +1,10 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import {
-    BoxInfo,
-    BoxOperationConfig,
-    BoxOperationResult,
-    BoxReference
+  BoxInfo,
+  BoxOperationConfig,
+  BoxOperationResult,
+  BoxReference
 } from '../types';
 import { ConfigManager } from '../utils/config';
 import { ManifestUtils } from '../utils/manifestUtils';
@@ -201,8 +201,10 @@ export class BoxManager {
       // Download and copy files
       const results = await this.downloadAndCopyFiles(boxRef, boxInfo, resolvedTargetDir, config.force);
 
+
+
       // Store manifest locally after successful file operations (unless noSync is enabled)
-      if (!config.noSync) {
+      if (!config.nosync) {
         try {
           await this.storeManifestLocally(boxRef, boxInfo, resolvedTargetDir);
         } catch (manifestError) {
@@ -357,7 +359,7 @@ export class BoxManager {
    * @param targetDirectory Target directory (optional)
    * @param force Whether to force overwrite existing files
    * @param overrideRegistry Optional registry to override the parsed registry
-   * @param noSync Whether to skip creating .qraft directory (no sync tracking)
+   * @param nosync Whether to skip creating .qraft directory (no sync tracking)
    * @returns Promise<BoxOperationResult> Result of the operation
    */
   async copyBoxByName(
@@ -365,7 +367,7 @@ export class BoxManager {
     targetDirectory?: string,
     force: boolean = false,
     overrideRegistry?: string,
-    noSync: boolean = false
+    nosync: boolean = false
   ): Promise<BoxOperationResult> {
     const config: BoxOperationConfig = {
       boxName,
@@ -373,7 +375,7 @@ export class BoxManager {
       force,
       interactive: false,
       boxesDirectory: '', // Not used in GitHub mode
-      noSync
+      nosync: nosync
     };
 
     return this.copyBox(config, overrideRegistry);

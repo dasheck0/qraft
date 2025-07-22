@@ -244,7 +244,7 @@ qraft copy <box> [options]
 - `-f, --force` - Force overwrite existing files
 - `-r, --registry <registry>` - Use specific registry
 - `-i, --interactive` - Interactive mode with prompts
-- `-n, --no-sync` - Skip creating .qraft directory (no sync tracking)
+- `-n, --nosync` - Skip creating .qraft directory (no sync tracking)
 
 **Examples:**
 ```bash
@@ -252,7 +252,7 @@ qraft copy n8n
 qraft copy readme --target ./documentation
 qraft copy .tasks --force
 qraft copy myorg/custom-template --registry mycompany/templates
-qraft copy config-template --no-sync  # Copy without sync tracking
+qraft copy config-template --nosync  # Copy without sync tracking
 ```
 
 ### `list`

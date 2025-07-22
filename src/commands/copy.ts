@@ -10,7 +10,7 @@ interface CopyOptions {
   force?: boolean;
   registry?: string;
   interactive?: boolean;
-  noSync?: boolean;
+  nosync?: boolean;
 }
 
 export async function copyCommand(
@@ -22,11 +22,11 @@ export async function copyCommand(
     // Use interactive mode if requested
     if (options.interactive) {
       const interactiveMode = new InteractiveMode(boxManager);
-      const copyOptions: { registry?: string; target?: string; force?: boolean; noSync?: boolean } = {};
+      const copyOptions: { registry?: string; target?: string; force?: boolean; nosync?: boolean } = {};
       if (options.registry !== undefined) copyOptions.registry = options.registry;
       if (options.target !== undefined) copyOptions.target = options.target;
       if (options.force !== undefined) copyOptions.force = options.force;
-      if (options.noSync !== undefined) copyOptions.noSync = options.noSync;
+      if (options.nosync !== undefined) copyOptions.nosync = options.nosync;
 
       const result = await interactiveMode.copyBox(boxName, copyOptions);
 
@@ -35,6 +35,9 @@ export async function copyCommand(
       }
       return;
     }
+
+    console.log(options);
+
 
     // Non-interactive mode (existing logic)
     // Parse box reference to validate it exists
@@ -126,7 +129,7 @@ export async function copyCommand(
       force: options.force || false,
       interactive: options.interactive || false,
       boxesDirectory: '', // Not used for GitHub mode
-      noSync: options.noSync ?? false
+      nosync: options.nosync ?? false
     };
     
     // Show progress
@@ -160,8 +163,8 @@ export async function copyCommand(
       console.log(chalk.gray(`\n📁 Files copied to: ${targetDirectory}`));
 
       // Show sync tracking status
-      if (config.noSync) {
-        console.log(chalk.yellow('ℹ️  No sync tracking (use without --no-sync to enable updates)'));
+      if (config.nosync) {
+        console.log(chalk.yellow('ℹ️  No sync tracking (use without --nosync to enable updates)'));
       } else {
         console.log(chalk.green('📦 Box tracking enabled in .qraft/ directory'));
       }

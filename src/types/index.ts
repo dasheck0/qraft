@@ -55,7 +55,7 @@ export interface BoxOperationConfig {
   boxesDirectory: string;
 
   /** Whether to skip creating .qraft directory (no sync tracking) */
-  noSync?: boolean;
+  nosync?: boolean;
 }
 
 /**
