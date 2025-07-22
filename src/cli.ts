@@ -2,6 +2,7 @@
 
 import chalk from 'chalk';
 import { Command } from 'commander';
+import { version } from '../package.json';
 import { authCommand } from './commands/auth';
 import { cacheCommand } from './commands/cache';
 import { configCommand } from './commands/config';
@@ -21,7 +22,7 @@ const boxManager = new BoxManager(configManager);
 program
   .name('qraft')
   .description('A CLI tool to qraft structured project setups from GitHub template repositories')
-  .version('1.0.0')
+  .version(version)
   .option('-v, --verbose', 'enable verbose output')
   .option('-r, --registry <registry>', 'override default registry')
   .hook('preAction', (thisCommand) => {
