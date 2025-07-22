@@ -158,7 +158,14 @@ export async function copyCommand(
       }
       
       console.log(chalk.gray(`\n📁 Files copied to: ${targetDirectory}`));
-      
+
+      // Show sync tracking status
+      if (config.noSync) {
+        console.log(chalk.yellow('ℹ️  No sync tracking (use without --no-sync to enable updates)'));
+      } else {
+        console.log(chalk.green('📦 Box tracking enabled in .qraft/ directory'));
+      }
+
       // Show next steps if available in manifest
       if (boxInfo.manifest.postInstall) {
         console.log(chalk.blue.bold('\n📋 Next Steps:'));

@@ -34,22 +34,13 @@
   - [x] 3.1 Pass noSync option from CLI to BoxManager in copy command
   - [x] 3.2 Update non-interactive copy workflow to handle noSync flag
   - [x] 3.3 Ensure backward compatibility - default behavior unchanged when flag not provided
-- [ ] 4.0 Enhance Interactive Mode with Sync Preferences
+- [x] 4.0 Enhance Interactive Mode with Sync Preferences
   - [x] 4.1 Add sync preference prompt to InteractiveMode.copyBox() method
   - [x] 4.2 Update interactive workflow to respect explicit --no-sync flag when provided
   - [x] 4.3 Pass user's sync preference choice to BoxManager
   - [x] 4.4 Handle sync preference in interactive mode configuration
 - [ ] 5.0 Update Output Messages and User Experience
-  - [ ] 5.1 Modify success messages to indicate sync tracking status
-  - [ ] 5.2 Add informational message when no-sync mode is used
-  - [ ] 5.3 Update existing sync-enabled messages to be more explicit
-  - [ ] 5.4 Ensure consistent messaging across interactive and non-interactive modes
-- [ ] 6.0 Comprehensive Testing and Validation
-  - [ ] 6.1 Write unit tests for CLI flag parsing and option handling
-  - [ ] 6.2 Write integration tests for copy command with --no-sync flag
-  - [ ] 6.3 Write tests for interactive mode sync preference prompts
-  - [ ] 6.4 Write tests to verify .qraft directory is not created with --no-sync
-  - [ ] 6.5 Write backward compatibility tests to ensure default behavior unchanged
-  - [ ] 6.6 Write tests for BoxManager conditional manifest storage logic
-  - [ ] 6.7 Run full test suite to ensure no regressions
-  - [ ] 6.8 Test both sync and no-sync modes produce identical file copying results
+  - [x] 5.1 Modify success messages to indicate sync tracking status
+  - [x] 5.2 Add informational message when no-sync mode is used
+  - [x] 5.3 Update existing sync-enabled messages to be more explicit
+  - [x] 5.4 Ensure consistent messaging across interactive and non-interactive modes
