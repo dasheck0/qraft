@@ -30,15 +30,15 @@
   - [x] 2.2 Add conditional logic to skip storeManifestLocally() when noSync is true
   - [x] 2.3 Ensure file copying functionality works identically regardless of sync setting
   - [x] 2.4 Update copyBoxByName() method to support noSync parameter
-- [ ] 3.0 Update Copy Command Handler
+- [x] 3.0 Update Copy Command Handler
   - [x] 3.1 Pass noSync option from CLI to BoxManager in copy command
   - [x] 3.2 Update non-interactive copy workflow to handle noSync flag
   - [x] 3.3 Ensure backward compatibility - default behavior unchanged when flag not provided
 - [ ] 4.0 Enhance Interactive Mode with Sync Preferences
-  - [ ] 4.1 Add sync preference prompt to InteractiveMode.copyBox() method
-  - [ ] 4.2 Update interactive workflow to respect explicit --no-sync flag when provided
-  - [ ] 4.3 Pass user's sync preference choice to BoxManager
-  - [ ] 4.4 Handle sync preference in interactive mode configuration
+  - [x] 4.1 Add sync preference prompt to InteractiveMode.copyBox() method
+  - [x] 4.2 Update interactive workflow to respect explicit --no-sync flag when provided
+  - [x] 4.3 Pass user's sync preference choice to BoxManager
+  - [x] 4.4 Handle sync preference in interactive mode configuration
 - [ ] 5.0 Update Output Messages and User Experience
   - [ ] 5.1 Modify success messages to indicate sync tracking status
   - [ ] 5.2 Add informational message when no-sync mode is used

@@ -30,6 +30,7 @@ export class InteractiveMode {
     registry?: string;
     target?: string;
     force?: boolean;
+    noSync?: boolean;
   } = {}): Promise<BoxOperationResult> {
     try {
       console.log(chalk.blue.bold('📦 Interactive Box Copy\n'));
@@ -143,13 +144,25 @@ export class InteractiveMode {
         }
       }
 
-      // Step 4: Show summary and final confirmation
+      // Step 4: Ask about sync tracking preference (unless explicitly set)
+      let enableSync = !options.noSync; // Default to sync enabled unless noSync is explicitly true
+
+      if (options.noSync === undefined) {
+        // Only prompt if not explicitly set via CLI flag
+        enableSync = await this.prompts.confirm(
+          'Enable sync tracking? (Creates .qraft directory for updates and management)',
+          true
+        );
+      }
+
+      // Step 5: Show summary and final confirmation
       console.log(chalk.blue.bold('\n📋 Copy Summary:'));
       console.log(`  Box: ${chalk.cyan(selectedBox.manifest.name)} ${chalk.gray(`(${selectedBox.manifest.version})`)}`);
       console.log(`  Registry: ${chalk.yellow(selectedRegistry)}`);
       console.log(`  Target: ${chalk.gray(targetDirectory)}`);
       console.log(`  Files: ${chalk.cyan(selectedBox.files.length)} files`);
       console.log(`  Overwrite: ${forceOverwrite ? chalk.red('Yes') : chalk.green('No')}`);
+      console.log(`  Sync Tracking: ${enableSync ? chalk.green('Enabled') : chalk.yellow('Disabled')}`);
 
       const finalConfirm = await this.prompts.confirm('\nProceed with copy operation?', true);
       if (!finalConfirm) {
@@ -167,7 +180,8 @@ export class InteractiveMode {
         targetDirectory,
         force: forceOverwrite,
         interactive: true,
-        boxesDirectory: '' // Not used for GitHub mode
+        boxesDirectory: '', // Not used for GitHub mode
+        noSync: !enableSync
       };
 
       const result = await this.boxManager.copyBox(config, selectedRegistry);

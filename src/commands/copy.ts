@@ -22,10 +22,11 @@ export async function copyCommand(
     // Use interactive mode if requested
     if (options.interactive) {
       const interactiveMode = new InteractiveMode(boxManager);
-      const copyOptions: { registry?: string; target?: string; force?: boolean } = {};
+      const copyOptions: { registry?: string; target?: string; force?: boolean; noSync?: boolean } = {};
       if (options.registry !== undefined) copyOptions.registry = options.registry;
       if (options.target !== undefined) copyOptions.target = options.target;
       if (options.force !== undefined) copyOptions.force = options.force;
+      if (options.noSync !== undefined) copyOptions.noSync = options.noSync;
 
       const result = await interactiveMode.copyBox(boxName, copyOptions);
 
