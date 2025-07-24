@@ -33,6 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+
+## [1.1.6] - 2025-07-24
+
+### Maintenance
+- Merge branch 'feature/add-gitignore-command' into develop
+
 ## [1.1.5] - 2025-07-24
 
 ### Added
