@@ -40,6 +40,7 @@ Also: Have you ever tried to come up with a short, unique and fitting name for y
 - 🎯 **Target Directories** - Flexible file placement with overwrite protection
 - 🔍 **Box Discovery** - List and search available templates
 - 🔄 **Smart Detection** - Automatically detects existing boxes and switches to update workflow
+- 🚫 **Gitignore Management** - Automatically manage .gitignore patterns for qraft files
 
 ## Installation
 
@@ -111,6 +112,18 @@ npx qraft copy readme --target ./docs
 
 # Force overwrite existing files
 npx qraft copy .tasks --force
+```
+
+### Manage .gitignore for Qraft Files
+```bash
+# Add qraft patterns to .gitignore (recommended first step)
+npx qraft gitignore
+
+# Preview what would be added
+npx qraft gitignore --dry-run
+
+# Add patterns without confirmation prompts
+npx qraft gitignore --force
 ```
 
 ### Create a New Box from Local Directory
@@ -194,7 +207,38 @@ This approach allows qraft to:
 - **Registry sync** - Maintain connection to source registry
 - **Conflict resolution** - Handle file changes intelligently
 
+## Commands Overview
+
+| Command | Purpose | Key Options |
+|---------|---------|-------------|
+| `copy <box>` | Copy template boxes to your project | `-t, --target`, `-f, --force`, `-i, --interactive` |
+| `create <path> [name]` | Create/update boxes from local directories | `-r, --registry`, `--no-interactive`, `--remote-path` |
+| `list` | Browse available template boxes | `-r, --registry`, `-i, --interactive`, `--all-registries` |
+| `info <box>` | Show detailed box information | `-r, --registry` |
+| `gitignore` | Manage .gitignore patterns for qraft files | `-d, --dry-run`, `-f, --force`, `-v, --verbose`, `--directory` |
+| `config <cmd>` | Manage configuration and registries | `show`, `set`, `add-registry`, `remove-registry` |
+| `auth <cmd>` | Handle GitHub authentication | `login`, `logout`, `status`, `token` |
+| `cache <cmd>` | Manage local cache | `status`, `clear`, `info`, `list` |
+
+**Quick Command Reference:**
+```bash
+# Essential workflow
+npx qraft gitignore              # Set up .gitignore first
+npx qraft copy template-name     # Copy a template
+npx qraft create . my-template   # Create your own template
+
+# Discovery and information
+npx qraft list                   # Browse available templates
+npx qraft info template-name     # Get template details
+
+# Configuration and maintenance
+npx qraft config show            # View current settings
+npx qraft cache clear            # Clear cache if needed
+```
+
 ## Commands
+
+> **💡 Tip:** Start with `qraft gitignore` to set up .gitignore patterns before using other qraft commands. This prevents qraft-generated files from being committed to version control.
 
 ### `create <path> [box-name]`
 Create a new template box from a local directory or update an existing one.
@@ -354,6 +398,184 @@ qraft cache clear
 qraft cache info n8n
 ```
 
+### `gitignore`
+Manage .gitignore patterns for qraft-generated files.
+
+```bash
+qraft gitignore [options]
+```
+
+**Options:**
+- `-d, --dry-run` - Show what would be added without making changes
+  - Displays a complete preview of changes before execution
+  - Shows existing patterns that would be skipped
+  - Provides file content preview with proposed additions
+  - Safe to run multiple times without side effects
+  - Useful for understanding what the command will do
+
+- `-f, --force` - Skip confirmation prompts and create/modify files automatically
+  - Bypasses all interactive confirmation prompts
+  - Automatically creates .gitignore file if it doesn't exist
+  - Automatically adds patterns to existing .gitignore file
+  - Ideal for automation, scripts, and CI/CD environments
+  - Cannot be combined with --dry-run (conflicting options)
+
+- `-v, --verbose` - Show detailed output
+  - Displays startup information and configuration
+  - Shows directory analysis and validation results
+  - Provides pattern analysis with categorization
+  - Reports detailed operation progress and results
+  - Includes post-operation validation and file verification
+
+- `--directory <path>` - Target directory (defaults to current directory)
+  - Specifies the directory where .gitignore should be created/modified
+  - Path can be absolute or relative to current working directory
+  - Directory must exist and be writable
+  - Useful for batch operations across multiple projects
+  - Validates directory accessibility before proceeding
+
+**Description:**
+The gitignore command adds qraft-specific patterns to your .gitignore file to prevent qraft-generated files from being committed to version control. It includes patterns for .qraft metadata directories, configuration files, and cache files.
+
+**Examples:**
+```bash
+# Add qraft patterns to .gitignore in current directory
+qraft gitignore
+
+# Preview what patterns would be added
+qraft gitignore --dry-run
+
+# Show detailed information during execution
+qraft gitignore --verbose
+
+# Skip confirmations and add patterns automatically
+qraft gitignore --force
+
+# Add patterns to .gitignore in specific directory
+qraft gitignore --directory ./my-project
+
+# Combine verbose and dry-run for detailed preview
+qraft gitignore --dry-run --verbose
+
+# Force operation with verbose output for automation logging
+qraft gitignore --force --verbose
+```
+
+**Option Combinations:**
+
+*Safe exploration:*
+```bash
+# Best practice: Always preview first
+qraft gitignore --dry-run --verbose
+# Then execute if satisfied
+qraft gitignore
+```
+
+*Automation-friendly:*
+```bash
+# Skip all prompts with detailed logging
+qraft gitignore --force --verbose
+
+# Batch operation across multiple directories
+qraft gitignore --force --directory ./project1
+qraft gitignore --force --directory ./project2
+```
+
+*Development workflow:*
+```bash
+# Check what would happen in verbose detail
+qraft gitignore --dry-run --verbose --directory ./new-feature
+
+# Apply changes with confirmation
+qraft gitignore --verbose --directory ./new-feature
+```
+
+**Invalid Combinations:**
+- `--dry-run --force` - Conflicting options (dry-run prevents changes, force skips confirmations)
+- Empty `--directory ""` - Invalid directory path
+
+**What gets added:**
+The command adds the following patterns to your .gitignore file:
+- `.qraft/` - Qraft metadata directory
+- `.qraftrc` - Qraft configuration file
+- `qraft-cache/` - Local cache directory
+- `*.qraft.tmp` - Temporary qraft files
+
+**Behavior:**
+- **New .gitignore**: Creates a new .gitignore file with qraft patterns
+- **Existing .gitignore**: Adds missing qraft patterns to existing file
+- **Duplicate detection**: Skips patterns that already exist
+- **Confirmation prompts**: Asks before creating or modifying files (unless --force is used)
+- **Dry-run mode**: Shows exactly what would be changed without making modifications
+
+**Exit Codes:**
+- `0` - Success (patterns added or no changes needed)
+- `1` - Error (invalid options, permission denied, or operation failed)
+
+**Return Behavior:**
+- **Success with changes**: Patterns were added to .gitignore file
+- **Success without changes**: All patterns already exist in .gitignore
+- **Success (dry-run)**: Preview completed successfully
+- **Error**: Invalid options, file permissions, or unexpected errors
+
+**Common Scenarios:**
+
+*Setting up a new project:*
+```bash
+# Initialize your project
+mkdir my-new-project && cd my-new-project
+git init
+
+# Add qraft patterns to .gitignore before first commit
+qraft gitignore
+
+# Now you can safely use qraft commands
+qraft copy n8n
+qraft create . my-project-template
+```
+
+*Adding to existing project:*
+```bash
+# Navigate to existing project
+cd my-existing-project
+
+# Preview what would be added
+qraft gitignore --dry-run
+
+# Add patterns with confirmation
+qraft gitignore
+```
+
+*Automated setup (CI/CD):*
+```bash
+# Skip confirmations for automated environments
+qraft gitignore --force
+
+# Or combine with other commands
+qraft gitignore --force && qraft copy deployment-config
+```
+
+*Team workflow:*
+```bash
+# Team lead sets up .gitignore
+qraft gitignore --verbose
+
+# Commit the .gitignore file
+git add .gitignore
+git commit -m "Add qraft patterns to .gitignore"
+
+# Team members can now safely use qraft
+qraft copy shared-config
+```
+
+*Multiple projects:*
+```bash
+# Add to multiple project directories
+for dir in project1 project2 project3; do
+  qraft gitignore --directory ./$dir --force
+done
+```
+
 ## Configuration
 
 ### Registry Configuration
@@ -462,17 +684,75 @@ Boxes can be referenced in several ways:
    ✅ Proceed with update? (y/N)
    ```
 
+### Best Practices with Gitignore
+
+**Always set up .gitignore first:**
+```bash
+# Start any new project with qraft gitignore
+mkdir my-project && cd my-project
+git init
+qraft gitignore  # Do this before any qraft operations
+git add .gitignore && git commit -m "Initial .gitignore with qraft patterns"
+```
+
+**Integrate with project initialization:**
+```bash
+# Complete project setup workflow
+mkdir awesome-app && cd awesome-app
+git init
+
+# Set up gitignore first
+qraft gitignore --force
+
+# Copy your base template
+qraft copy node-app --target .
+
+# Create your own box for future use
+qraft create . awesome-app-template --registry mycompany/templates
+
+# Everything is properly ignored
+git add . && git commit -m "Initial project setup"
+```
+
+**Team onboarding:**
+```bash
+# New team member setup
+git clone https://github.com/mycompany/awesome-app.git
+cd awesome-app
+
+# .gitignore already has qraft patterns (set up by team lead)
+# Safe to use qraft commands immediately
+qraft copy development-config
+qraft copy testing-setup
+```
+
 ## Global Options
 
 - `-v, --verbose` - Enable verbose output
+  - For gitignore command: Shows detailed operation progress and analysis
 - `-r, --registry <registry>` - Override default registry
+  - Not applicable to gitignore command (operates on local files only)
 - `--help` - Show help information
+  - `qraft gitignore --help` shows gitignore-specific help
 - `--version` - Show version number
+
+**Global vs Command-Specific Options:**
+- Global `-v, --verbose` works with gitignore command
+- Gitignore-specific options (`--dry-run`, `--force`, `--directory`) only work with gitignore command
+- Global options can be combined with command-specific options: `qraft gitignore --verbose --dry-run`
 
 ## Environment Variables
 
-- `QRAFT_VERBOSE` - Enable verbose logging
+- `QRAFT_VERBOSE` - Enable verbose logging (affects gitignore command output)
 - `GITHUB_TOKEN` - Default GitHub token for authentication
+- `QRAFT_FORCE` - Enable force mode for all commands (skips confirmations)
+- `QRAFT_DRY_RUN` - Enable dry-run mode for all commands (preview only)
+
+**Gitignore-specific behavior:**
+- When `QRAFT_VERBOSE=true`, gitignore command automatically uses verbose output
+- When `QRAFT_FORCE=true`, gitignore command skips all confirmation prompts
+- When `QRAFT_DRY_RUN=true`, gitignore command only shows previews without changes
+- Environment variables can be overridden by explicit command-line flags
 
 ## Troubleshooting
 
@@ -513,6 +793,36 @@ If `qraft create` doesn't detect your existing box:
 1. Ensure `.qraft` directory exists in the target directory
 2. Check that `.qraft/manifest.json` contains valid JSON
 3. Verify the manifest has required fields (name, version, etc.)
+
+### Gitignore Command Issues
+
+#### "Permission denied" error
+If you can't create or modify .gitignore:
+1. Check directory permissions: `ls -la`
+2. Ensure you have write access to the target directory
+3. Try running with elevated permissions if necessary
+4. Use `--directory` option to target a writable directory
+
+#### Patterns not being added
+If the command succeeds but patterns aren't in .gitignore:
+1. Check if patterns already exist (command skips duplicates)
+2. Use `--verbose` flag to see detailed operation info
+3. Use `--dry-run` to preview what would be added
+4. Verify the .gitignore file location with `--verbose`
+
+#### .gitignore file not created
+If no .gitignore file appears after running the command:
+1. Check if you confirmed the creation prompt (or use `--force`)
+2. Verify target directory with `--directory` option
+3. Check file permissions in the target directory
+4. Use `--verbose` to see detailed execution steps
+
+#### Command hangs or times out
+If the command doesn't complete:
+1. Check if there are permission prompts waiting for input
+2. Use `--force` to skip interactive prompts
+3. Verify directory accessibility and permissions
+4. Check for filesystem issues or disk space
 
 ## Contributing
 

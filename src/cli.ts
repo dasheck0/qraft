@@ -8,6 +8,7 @@ import { cacheCommand } from './commands/cache';
 import { configCommand } from './commands/config';
 import { copyCommand } from './commands/copy';
 import { createCommand } from './commands/create';
+import { createGitignoreCommand } from './commands/gitignore';
 import { listCommand } from './commands/list';
 import { updateCommand } from './commands/update';
 import { BoxManager } from './core/boxManager';
@@ -130,6 +131,9 @@ program.addCommand(authCommand(boxManager));
 
 // Cache command - manage local cache
 program.addCommand(cacheCommand(boxManager));
+
+// Gitignore command - manage .gitignore patterns for qraft files
+program.addCommand(createGitignoreCommand());
 
 // Info command - show box information
 program
