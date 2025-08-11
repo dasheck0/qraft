@@ -325,8 +325,6 @@ describe('RepositoryManager', () => {
 
       // Permission checker and GitHub API are already mocked globally
 
-
-
       const result = await repositoryManager.createBox(
         'test-owner',
         'test-repo',
@@ -337,6 +335,83 @@ describe('RepositoryManager', () => {
 
       expect(result.success).toBe(true);
       // The test passes if no errors are thrown during file processing
+    });
+
+    it('should correctly encode text and binary files for GitHub API', async () => {
+      // Mock files with different types
+      (mockFs.readdir as any).mockResolvedValue([
+        { name: 'text.js', isDirectory: () => false, isFile: () => true } as any,
+        { name: 'binary.png', isDirectory: () => false, isFile: () => true } as any
+      ]);
+
+      (mockFs.readFile as any).mockImplementation((filePath: string) => {
+        if (filePath.includes('text.js')) {
+          return Promise.resolve(Buffer.from('console.log("Hello World");'));
+        }
+        if (filePath.includes('binary.png')) {
+          return Promise.resolve(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])); // PNG header
+        }
+        return Promise.resolve(Buffer.from(''));
+      });
+
+      // Capture the tree data sent to GitHub API
+      let capturedTree: any[] = [];
+      const { Octokit } = require('@octokit/rest');
+      const mockCreateTree = jest.fn().mockImplementation((params: any) => {
+        capturedTree = params.tree;
+        return Promise.resolve({ data: { sha: 'new-tree-sha' } });
+      });
+
+      // Override the createTree mock for this test
+      Octokit.mockImplementation(() => ({
+        rest: {
+          repos: {
+            get: jest.fn().mockResolvedValue({
+              data: { default_branch: 'main' }
+            })
+          },
+          git: {
+            getRef: jest.fn().mockResolvedValue({
+              data: { object: { sha: 'base-commit-sha' } }
+            }),
+            getCommit: jest.fn().mockResolvedValue({
+              data: { tree: { sha: 'base-tree-sha' } }
+            }),
+            createTree: mockCreateTree,
+            createCommit: jest.fn().mockResolvedValue({
+              data: { sha: 'new-commit-sha' }
+            }),
+            updateRef: jest.fn().mockResolvedValue({
+              data: { ref: 'refs/heads/main' }
+            })
+          }
+        }
+      }));
+
+      const result = await repositoryManager.createBox(
+        'test-owner',
+        'test-repo',
+        'test-box',
+        tempDir,
+        testManifest
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockCreateTree).toHaveBeenCalled();
+
+      // Verify that text files are encoded as UTF-8 strings
+      const textFile = capturedTree.find(item => item.path.includes('text.js'));
+      expect(textFile).toBeDefined();
+      expect(textFile.encoding).toBe('utf-8');
+      expect(textFile.content).toBe('console.log("Hello World");');
+
+      // Verify that binary files are encoded as base64 strings
+      const binaryFile = capturedTree.find(item => item.path.includes('binary.png'));
+      expect(binaryFile).toBeDefined();
+      expect(binaryFile.encoding).toBe('base64');
+      expect(typeof binaryFile.content).toBe('string');
+      // The content should be base64 encoded PNG header
+      expect(binaryFile.content).toBe(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]).toString('base64'));
     });
   });
 

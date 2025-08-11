@@ -174,12 +174,27 @@ export class RepositoryManager {
       });
 
       // Create tree with all files
-      const tree = filesToUpload.map(file => ({
-        path: file.path,
-        mode: '100644' as const,
-        type: 'blob' as const,
-        content: typeof file.content === 'string' ? file.content : file.content.toString('base64')
-      }));
+      const tree = filesToUpload.map(file => {
+        // Determine the correct content encoding for GitHub API
+        let content: string;
+        const encoding = file.encoding || 'utf-8';
+
+        if (encoding === 'base64') {
+          // For binary files, ensure content is base64 encoded
+          content = typeof file.content === 'string' ? file.content : file.content.toString('base64');
+        } else {
+          // For text files, ensure content is UTF-8 string
+          content = typeof file.content === 'string' ? file.content : file.content.toString('utf-8');
+        }
+
+        return {
+          path: file.path,
+          mode: '100644' as const,
+          type: 'blob' as const,
+          content,
+          encoding
+        };
+      });
 
       const { data: newTree } = await octokit.rest.git.createTree({
         owner,
