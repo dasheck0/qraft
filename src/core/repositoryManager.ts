@@ -7,6 +7,7 @@ import { ManifestManager } from './manifestManager';
 import { PermissionChecker } from './permissionChecker';
 import { BoxMetadata, PullRequestCreator } from './pullRequestCreator';
 import { RepositoryForker } from './repositoryForker';
+import { QraftIgnore } from '../utils/qraftIgnore';
 
 export interface CreateBoxOptions {
   branch?: string;
@@ -316,24 +317,30 @@ export class RepositoryManager {
   }
 
   /**
-   * Collect all files from local directory
+   * Collect all files from local directory, excluding paths matched by QraftIgnore.
    */
   private async collectFiles(localPath: string, boxPath: string): Promise<FileToUpload[]> {
     const files: FileToUpload[] = [];
-    
+    const ignore = await QraftIgnore.create(localPath);
+
     const scanDirectory = async (dirPath: string, relativePath: string = '') => {
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
-      
+
       for (const entry of entries) {
-        const fullPath = path.join(dirPath, entry.name);
         const relativeFilePath = path.join(relativePath, entry.name).replace(/\\/g, '/');
-        
+
+        if (ignore.ignores(relativeFilePath)) {
+          continue;
+        }
+
+        const fullPath = path.join(dirPath, entry.name);
+
         if (entry.isDirectory()) {
           await scanDirectory(fullPath, relativeFilePath);
         } else if (entry.isFile()) {
           const content = await fs.readFile(fullPath);
           const isText = this.isTextFile(fullPath);
-          
+
           files.push({
             path: `${boxPath}/${relativeFilePath}`,
             content: isText ? content.toString('utf-8') : content,

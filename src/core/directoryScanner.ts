@@ -44,6 +44,8 @@ export class DirectoryScanner {
     directories: [
       // Version control
       '.git', '.svn', '.hg', '.bzr',
+      // qraft metadata
+      '.qraft',
       // Dependencies
       'node_modules', 'vendor', '__pycache__', '.venv', 'venv', 'env',
       // Build outputs
