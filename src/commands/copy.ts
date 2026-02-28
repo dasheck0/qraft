@@ -11,6 +11,7 @@ interface CopyOptions {
   registry?: string;
   interactive?: boolean;
   nosync?: boolean;
+  yes?: boolean;
 }
 
 export async function copyCommand(
@@ -102,8 +103,8 @@ export async function copyCommand(
     
     console.log(chalk.gray(`\n📁 Target: ${targetDirectory}`));
     
-    // Confirm if not in force mode and not interactive
-    if (!options.force && !options.interactive) {
+    // Confirm if not in force/yes mode and not interactive
+    if (!options.force && !options.interactive && !options.yes) {
       const { confirm } = await inquirer.prompt([
         {
           type: 'confirm',

@@ -58,6 +58,7 @@ program
   .description('Copy a template box to the current or specified directory')
   .option('-t, --target <directory>', 'target directory (default: current directory)')
   .option('-f, --force', 'force overwrite existing files')
+  .option('-y, --yes', 'skip confirmation prompt and auto-accept')
   .option('-r, --registry <registry>', 'use specific registry')
   .option('-i, --interactive', 'interactive mode with prompts')
   .option('-n, --nosync', 'skip creating .qraft directory (no sync tracking)')
