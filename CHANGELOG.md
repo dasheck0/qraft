@@ -34,6 +34,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+
+## [1.1.7] - 2026-02-28
+
+### Added
+- ✨ add -y/--yes flag to skip confirmation prompt (copy)
+
+### Fixed
+- 🐛 prevent junk directories from being uploaded to GitHub (upload)
+- resolve base64 encoding bug in box creation/update
+
+### Documentation
+- 📝 add AGENTS.md coding agent reference for qraft
+
+### Tests
+- 🧪 add comprehensive unit tests for --yes flag and ignore logic (copy,upload)
+
+### Maintenance
+- 🔧 sync package-lock.json version to 1.1.6
+- 🔧 add .opencode to .gitignore
+
 ## [1.1.6] - 2025-07-24
 
 ### Maintenance
