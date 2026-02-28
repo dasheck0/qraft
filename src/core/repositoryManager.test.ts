@@ -458,4 +458,218 @@ describe('RepositoryManager', () => {
       expect(manifestManager).toBeDefined();
     });
   });
+
+  describe('collectFiles ignore integration', () => {
+    /**
+     * These tests verify that collectFiles (called internally by createBox)
+     * skips paths matched by QraftIgnore — without touching the GitHub API.
+     * We capture the tree sent to git.createTree to inspect which files
+     * were actually included.
+     */
+
+    function makeOctokitWithTreeCapture(onTree: (tree: any[]) => void) {
+      const { Octokit } = require('@octokit/rest');
+      Octokit.mockImplementation(() => ({
+        rest: {
+          repos: {
+            get: jest.fn().mockResolvedValue({ data: { default_branch: 'main' } })
+          },
+          git: {
+            getRef: jest.fn().mockResolvedValue({ data: { object: { sha: 'base-sha' } } }),
+            getCommit: jest.fn().mockResolvedValue({ data: { tree: { sha: 'tree-sha' } } }),
+            createTree: jest.fn().mockImplementation((params: any) => {
+              onTree(params.tree);
+              return Promise.resolve({ data: { sha: 'new-tree-sha' } });
+            }),
+            createCommit: jest.fn().mockResolvedValue({ data: { sha: 'new-commit-sha' } }),
+            updateRef: jest.fn().mockResolvedValue({ data: {} })
+          }
+        }
+      }));
+    }
+
+    it('should exclude node_modules from uploaded files', async () => {
+      (mockFs.readdir as any).mockImplementation((dirPath: string) => {
+        if (dirPath === tempDir) {
+          return Promise.resolve([
+            { name: 'index.ts', isDirectory: () => false, isFile: () => true },
+            { name: 'node_modules', isDirectory: () => true, isFile: () => false }
+          ]);
+        }
+        // node_modules contents — should never be reached
+        return Promise.resolve([
+          { name: 'lodash', isDirectory: () => true, isFile: () => false }
+        ]);
+      });
+      (mockFs.readFile as any).mockResolvedValue(Buffer.from('export {}'));
+
+      let capturedTree: any[] = [];
+      makeOctokitWithTreeCapture(tree => { capturedTree = tree; });
+
+      const rm = new RepositoryManager('test-token');
+      await rm.createBox('owner', 'repo', 'my-box', tempDir, testManifest);
+
+      const paths = capturedTree.map((f: any) => f.path as string);
+      expect(paths.some(p => p.includes('node_modules'))).toBe(false);
+      expect(paths.some(p => p.includes('index.ts'))).toBe(true);
+    });
+
+    it('should exclude .qraft directory from uploaded files', async () => {
+      (mockFs.readdir as any).mockImplementation((dirPath: string) => {
+        if (dirPath === tempDir) {
+          return Promise.resolve([
+            { name: 'README.md', isDirectory: () => false, isFile: () => true },
+            { name: '.qraft', isDirectory: () => true, isFile: () => false }
+          ]);
+        }
+        return Promise.resolve([
+          { name: 'manifest.json', isDirectory: () => false, isFile: () => true }
+        ]);
+      });
+      (mockFs.readFile as any).mockResolvedValue(Buffer.from('# README'));
+
+      let capturedTree: any[] = [];
+      makeOctokitWithTreeCapture(tree => { capturedTree = tree; });
+
+      const rm = new RepositoryManager('test-token');
+      await rm.createBox('owner', 'repo', 'my-box', tempDir, testManifest);
+
+      const paths = capturedTree.map((f: any) => f.path as string);
+      expect(paths.some(p => p.includes('.qraft'))).toBe(false);
+      expect(paths.some(p => p.includes('README.md'))).toBe(true);
+    });
+
+    it('should exclude .git directory from uploaded files', async () => {
+      (mockFs.readdir as any).mockImplementation((dirPath: string) => {
+        if (dirPath === tempDir) {
+          return Promise.resolve([
+            { name: 'src', isDirectory: () => true, isFile: () => false },
+            { name: '.git', isDirectory: () => true, isFile: () => false }
+          ]);
+        }
+        if (dirPath.endsWith('src')) {
+          return Promise.resolve([
+            { name: 'main.ts', isDirectory: () => false, isFile: () => true }
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+      (mockFs.readFile as any).mockResolvedValue(Buffer.from('// main'));
+
+      let capturedTree: any[] = [];
+      makeOctokitWithTreeCapture(tree => { capturedTree = tree; });
+
+      const rm = new RepositoryManager('test-token');
+      await rm.createBox('owner', 'repo', 'my-box', tempDir, testManifest);
+
+      const paths = capturedTree.map((f: any) => f.path as string);
+      expect(paths.some(p => p.includes('.git'))).toBe(false);
+      expect(paths.some(p => p.includes('main.ts'))).toBe(true);
+    });
+
+    it('should exclude dist directory from uploaded files', async () => {
+      (mockFs.readdir as any).mockImplementation((dirPath: string) => {
+        if (dirPath === tempDir) {
+          return Promise.resolve([
+            { name: 'package.json', isDirectory: () => false, isFile: () => true },
+            { name: 'dist', isDirectory: () => true, isFile: () => false }
+          ]);
+        }
+        return Promise.resolve([
+          { name: 'index.js', isDirectory: () => false, isFile: () => true }
+        ]);
+      });
+      (mockFs.readFile as any).mockResolvedValue(Buffer.from('{}'));
+
+      let capturedTree: any[] = [];
+      makeOctokitWithTreeCapture(tree => { capturedTree = tree; });
+
+      const rm = new RepositoryManager('test-token');
+      await rm.createBox('owner', 'repo', 'my-box', tempDir, testManifest);
+
+      const paths = capturedTree.map((f: any) => f.path as string);
+      expect(paths.some(p => p.includes('dist'))).toBe(false);
+      expect(paths.some(p => p.includes('package.json'))).toBe(true);
+    });
+
+    it('should exclude *.log files from uploaded files', async () => {
+      (mockFs.readdir as any).mockImplementation((dirPath: string) => {
+        if (dirPath === tempDir) {
+          return Promise.resolve([
+            { name: 'app.log', isDirectory: () => false, isFile: () => true },
+            { name: 'index.ts', isDirectory: () => false, isFile: () => true }
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+      (mockFs.readFile as any).mockResolvedValue(Buffer.from('data'));
+
+      let capturedTree: any[] = [];
+      makeOctokitWithTreeCapture(tree => { capturedTree = tree; });
+
+      const rm = new RepositoryManager('test-token');
+      await rm.createBox('owner', 'repo', 'my-box', tempDir, testManifest);
+
+      const paths = capturedTree.map((f: any) => f.path as string);
+      expect(paths.some(p => p.includes('app.log'))).toBe(false);
+      expect(paths.some(p => p.includes('index.ts'))).toBe(true);
+    });
+
+    it('should include normal source files that are not ignored', async () => {
+      (mockFs.readdir as any).mockImplementation((dirPath: string) => {
+        if (dirPath === tempDir) {
+          return Promise.resolve([
+            { name: 'src', isDirectory: () => true, isFile: () => false }
+          ]);
+        }
+        if (dirPath.endsWith('src')) {
+          return Promise.resolve([
+            { name: 'utils.ts', isDirectory: () => false, isFile: () => true },
+            { name: 'config.ts', isDirectory: () => false, isFile: () => true }
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+      (mockFs.readFile as any).mockResolvedValue(Buffer.from('export const x = 1;'));
+
+      let capturedTree: any[] = [];
+      makeOctokitWithTreeCapture(tree => { capturedTree = tree; });
+
+      const rm = new RepositoryManager('test-token');
+      await rm.createBox('owner', 'repo', 'my-box', tempDir, testManifest);
+
+      const paths = capturedTree.map((f: any) => f.path as string);
+      expect(paths.some(p => p.includes('utils.ts'))).toBe(true);
+      expect(paths.some(p => p.includes('config.ts'))).toBe(true);
+    });
+
+    it('should not recurse into ignored directories', async () => {
+      const readdirCallPaths: string[] = [];
+
+      (mockFs.readdir as any).mockImplementation((dirPath: string) => {
+        readdirCallPaths.push(dirPath);
+        if (dirPath === tempDir) {
+          return Promise.resolve([
+            { name: 'src', isDirectory: () => true, isFile: () => false },
+            { name: 'node_modules', isDirectory: () => true, isFile: () => false }
+          ]);
+        }
+        if (dirPath.endsWith('src')) {
+          return Promise.resolve([
+            { name: 'index.ts', isDirectory: () => false, isFile: () => true }
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+      (mockFs.readFile as any).mockResolvedValue(Buffer.from(''));
+
+      makeOctokitWithTreeCapture(() => {});
+
+      const rm = new RepositoryManager('test-token');
+      await rm.createBox('owner', 'repo', 'my-box', tempDir, testManifest);
+
+      const readIntoNodeModules = readdirCallPaths.some(p => p.includes('node_modules'));
+      expect(readIntoNodeModules).toBe(false);
+    });
+  });
 });
